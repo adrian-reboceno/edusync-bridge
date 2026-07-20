@@ -1,0 +1,231 @@
+services:
+
+  # ──────────────────────────────────────────────────────────────
+  # APP — PHP-FPM + Laravel
+  # Corre el backend: rutas HTTP, artisan commands, migraciones
+  # ──────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      target: development
+    container_name: neo_backend_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www                          # código fuente en tiempo real
+      - ./docker/app/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - neo_network
+
+  # ──────────────────────────────────────────────────────────────
+  # NGINX — servidor web / reverse proxy
+  # ──────────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: neo_backend_nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-8000}:80"     # libre en tu entorno (revisar si usas 8000 fuera de Docker)
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - neo_network
+
+  # ──────────────────────────────────────────────────────────────
+  # POSTGRES — BD local del backend
+  # Guarda: sync_records, sync_audit_log, scheduler_config
+  # ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: lms_sync_postgres
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT_FORWARD:-5435}:5432"
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-lms_sync_bridge}
+      POSTGRES_USER: ${DB_USERNAME:-lms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - lms_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-lms_user} -d ${DB_DATABASE:-lms_sync_bridge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - neo_network
+
+  # ──────────────────────────────────────────────────────────────
+  # POSTGRES CE — simula la BD del Control Escolar (solo desarrollo)
+  # En producción esta conexión apunta al servidor real del CE.
+  # ──────────────────────────────────────────────────────────────
+  postgres_ce:
+    image: postgres:16-alpine
+    container_name: lms_sync_postgres_ce
+    restart: unless-stopped
+    ports:
+      - "${CE_DB_PORT_FORWARD:-5436}:5432"  # 5436 en host
+    environment:
+      POSTGRES_DB: ${CE_DB_DATABASE:-control_escolar}
+      POSTGRES_USER: ${CE_DB_USERNAME:-ce_user}
+      POSTGRES_PASSWORD: ${CE_DB_PASSWORD:-secret}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - lms_ce_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/ce-seed:/docker-entrypoint-initdb.d   # datos de prueba
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CE_DB_USERNAME:-ce_user} -d ${CE_DB_DATABASE:-control_escolar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - neo_network
+
+  # ──────────────────────────────────────────────────────────────
+  # REDIS — queues, caché, sesiones
+  # Tres bases lógicas:
+  #   DB 0 → default / sesiones
+  #   DB 1 → caché
+  #   DB 2 → queues (neo-sync-high, neo-sync-default, neo-sync-low)
+  # ──────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: neo_backend_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT_FORWARD:-6381}:6379"  # 6381 en host — 6379/6380 ocupados por otros proyectos
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-}"
+    volumes:
+      - neo_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - neo_network
+
+  # ──────────────────────────────────────────────────────────────
+  # HORIZON — dashboard y supervisor de colas (Laravel Horizon)
+  # Reemplaza queue:work. Gestiona workers, reintentos, métricas.
+  # UI disponible en: http://localhost:8000/horizon
+  # ──────────────────────────────────────────────────────────────
+  horizon:
+    build:
+      context: .
+      dockerfile: docker/horizon/Dockerfile
+      target: development
+    container_name: lms_sync_horizon
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+      - ./docker/horizon/php.ini:/usr/local/etc/php/conf.d/horizon.ini
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - neo_network
+    healthcheck:
+      test: ["CMD", "php", "artisan", "horizon:status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────
+  # SCHEDULER — ejecuta php artisan schedule:run cada minuto
+  # En producción se puede reemplazar por un cron del SO,
+  # pero en desarrollo es más cómodo como servicio Docker.
+  # ──────────────────────────────────────────────────────────────
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      target: development
+    container_name: neo_backend_scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    command: >
+      sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
+    volumes:
+      - .:/var/www
+      - ./docker/app/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - neo_network
+
+  # ──────────────────────────────────────────────────────────────
+  # MAILPIT — captura correos en desarrollo (notificaciones de sync)
+  # UI: http://localhost:8026
+  # ──────────────────────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: neo_backend_mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_UI_PORT:-8026}:8025"     # web UI
+      - "${MAILPIT_SMTP_PORT:-1026}:1025"   # SMTP
+    networks:
+      - neo_network
+
+  # ──────────────────────────────────────────────────────────────
+  # REDIS COMMANDER — UI para inspeccionar colas y caché
+  # http://localhost:8083
+  # ──────────────────────────────────────────────────────────────
+  redis_commander:
+    image: rediscommander/redis-commander:latest
+    container_name: neo_backend_redis_ui
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: "local:redis:6379:0:${REDIS_PASSWORD:-}"
+    ports:
+      - "${REDIS_UI_PORT:-8083}:8081"   # 8081/8082 ocupados por otros proyectos
+    depends_on:
+      - redis
+    networks:
+      - neo_network
+    profiles:
+      - tools   # solo arranca con: docker compose --profile tools up
+
+# ────────────────────────────────────────────────────────────────
+# VOLÚMENES — persistencia entre reinicios
+# ────────────────────────────────────────────────────────────────
+volumes:
+  lms_postgres_data:
+    driver: local
+  lms_ce_postgres_data:
+    driver: local
+  neo_redis_data:
+    driver: local
+
+# ────────────────────────────────────────────────────────────────
+# REDES
+# ────────────────────────────────────────────────────────────────
+networks:
+  neo_network:
+    driver: bridge

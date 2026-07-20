@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -v)",
+      "Bash(composer -V)",
+      "Bash(docker compose *)",
+      "Bash(rm database/migrations/2026_07_03_152030_create_permission_tables.php *)",
+      "Bash(curl -s -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@edusync.edu\",\"password\":\"Admin@2024!\"}')",
+      "Bash(curl -s -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@edusync.edu\",\"password\":\"WrongPassword1!\"}' -w '\\\\nHTTP_STATUS:%{http_code}\\\\n')",
+      "Bash(composer validate *)",
+      "Bash(xargs -0 -n1 php -l)",
+      "Bash(curl -s -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@edusync.edu\",\"password\":\"Admin@2024!\",\"totp_code\":\"__TRACKED_VAR__\"}' -o /tmp/claude-1000/-home-adrian-dev-laravel-version-12-edusync-bridge/ecaa227e-32a6-4646-8da6-a166eac464cd/scratchpad/login.json -w 'HTTP_STATUS=%{http_code}\\\\n')",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import json; print\\(json.load\\(open\\('/tmp/claude-1000/-home-adrian-dev-laravel-version-12-edusync-bridge/ecaa227e-32a6-4646-8da6-a166eac464cd/scratchpad/login.json'\\)\\)['data']['access_token']\\)\")",
+      "Bash(python3 -c \"import json; print\\(json.load\\(open\\('/tmp/claude-1000/-home-adrian-dev-laravel-version-12-edusync-bridge/ecaa227e-32a6-4646-8da6-a166eac464cd/scratchpad/login.json'\\)\\)['data']['refresh_token']\\)\")",
+      "Bash(curl -s http://localhost:8000/api/v1/auth/me -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -w '\\\\nHTTP_STATUS=%{http_code}\\\\n')"
+    ],
+    "additionalDirectories": [
+      "/home/adrian/dev/laravel/version_12/edusync-bridge/database/migrations"
+    ]
+  }
+}
