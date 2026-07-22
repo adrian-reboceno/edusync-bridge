@@ -39,7 +39,9 @@
 
             "NeoLms\\": "src/NeoLms/",
             "ControlEscolar\\": "src/ControlEscolar/",
-            "Scheduler\\": "src/Scheduler/"
+            "Scheduler\\": "src/Scheduler/",
+
+            "Infrastructure\\": "src/Infrastructure/"
         }
     },
     "autoload-dev": {

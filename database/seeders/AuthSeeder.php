@@ -141,38 +141,78 @@ class AuthSeeder extends Seeder
             );
         }
 
-        // ── 3. Asignación rol → permisos ──────────────────────────
+        // ── 3. Asignación rol → permisos ──────────────────────────────
+        app()['cache']->forget(config('permission.cache.key', 'spatie.permission.cache'));
+
+        // Consultar IDs de roles directamente desde BD
+        $roleIds = DB::table('roles')
+            ->whereIn('name', array_keys(self::ROLE_PERMISSIONS))
+            ->where('guard_name', 'api')
+            ->pluck('id', 'name')  // ['super-admin' => 'uuid...', ...]
+            ->toArray();
+
+        // Consultar IDs de permisos directamente desde BD
+        $permissionIds = DB::table('permissions')
+            ->where('guard_name', 'api')
+            ->pluck('id', 'name')  // ['auth.users.create' => 'uuid...', ...]
+            ->toArray();
+
         foreach (self::ROLE_PERMISSIONS as $roleName => $permNames) {
-            $role = $roles[$roleName];
+            $roleId = $roleIds[$roleName] ?? null;
+
+            if ($roleId === null) {
+                $this->command->warn("Rol no encontrado: {$roleName}");
+                continue;
+            }
 
             DB::table('role_has_permissions')
-                ->where('role_id', $role->id)
+                ->where('role_id', $roleId)
                 ->delete();
 
             $permList = $permNames === '*'
                 ? array_keys(self::PERMISSIONS)
                 : $permNames;
 
-            $inserts = array_map(
-                fn(string $p) => ['role_id' => $role->id, 'permission_id' => $permissions[$p]->id],
-                $permList,
-            );
+            $inserts = [];
+            foreach ($permList as $permName) {
+                $permId = $permissionIds[$permName] ?? null;
+                if ($permId === null) {
+                    $this->command->warn("Permiso no encontrado: {$permName}");
+                    continue;
+                }
+                $inserts[] = ['role_id' => $roleId, 'permission_id' => $permId];
+            }
 
-            DB::table('role_has_permissions')->insert($inserts);
+            if (count($inserts) > 0) {
+                DB::table('role_has_permissions')->insert($inserts);
+            }
         }
 
-        // ── 4. SSoD — Exclusiones ─────────────────────────────────
+        // ── 4. SSoD — Exclusiones ─────────────────────────────────────
+        $allRoleIds = DB::table('roles')
+            ->where('guard_name', 'api')
+            ->pluck('id', 'name')
+            ->toArray();
+
         $exclusions = [
-            ['super-admin', 'admin-ti',           'ABSOLUTE',     'super-admin es exclusivo'],
-            ['super-admin', 'operador-academico',  'ABSOLUTE',     'super-admin es exclusivo'],
-            ['super-admin', 'auditor',             'ABSOLUTE',     'super-admin es exclusivo'],
-            ['auditor',     'operador-academico',  'ABSOLUTE',     'El auditor no puede operar lo que audita'],
-            ['auditor',     'admin-ti',            'RECOMMENDED',  'El auditor no debería auditar su propia configuración'],
+            ['super-admin', 'admin-ti',          'ABSOLUTE',    'super-admin es exclusivo'],
+            ['super-admin', 'operador-academico', 'ABSOLUTE',    'super-admin es exclusivo'],
+            ['super-admin', 'auditor',           'ABSOLUTE',    'super-admin es exclusivo'],
+            ['auditor',     'operador-academico', 'ABSOLUTE',    'El auditor no puede operar lo que audita'],
+            ['auditor',     'admin-ti',          'RECOMMENDED', 'El auditor no debería auditar su propia configuración'],
         ];
 
         foreach ($exclusions as [$a, $b, $level, $reason]) {
+            $roleAId = $allRoleIds[$a] ?? null;
+            $roleBId = $allRoleIds[$b] ?? null;
+
+            if ($roleAId === null || $roleBId === null) {
+                $this->command->warn("Rol no encontrado para exclusión: {$a} / {$b}");
+                continue;
+            }
+
             DB::table('role_exclusions')->updateOrInsert(
-                ['role_a_id' => $roles[$a]->id, 'role_b_id' => $roles[$b]->id],
+                ['role_a_id' => $roleAId, 'role_b_id' => $roleBId],
                 [
                     'id'         => (string) Str::uuid(),
                     'level'      => $level,
@@ -183,27 +223,31 @@ class AuthSeeder extends Seeder
             );
         }
 
-        // ── 5. Usuario super-admin inicial ────────────────────────
+        // ── 5. Usuario super-admin inicial ────────────────────────────
         $superAdmin = User::query()->updateOrCreate(
             ['email' => 'admin@edusync.edu'],
             [
-                'first_name'          => 'Super',
-                'last_name'           => 'Admin',
-                'password_hash'       => Hash::make('Admin@2024!'),
-                'status'              => 'ACTIVE',
-                'must_change_password'=> true,
-                'email_verified_at'   => now(),
+                'first_name'           => 'Super',
+                'last_name'            => 'Admin',
+                'password_hash'        => Hash::make('Admin@2024!'),
+                'status'               => 'ACTIVE',
+                'must_change_password' => true,
+                'email_verified_at'    => now(),
             ],
         );
 
-        DB::table('model_has_roles')->updateOrInsert(
-            [
-                'role_id'    => $roles['super-admin']->id,
-                'model_id'   => $superAdmin->id,
-                'model_type' => User::class,
-            ],
-            ['assigned_by' => $superAdmin->id, 'assigned_at' => now()],
-        );
+        $superAdminRoleId = $allRoleIds['super-admin'] ?? null;
+
+        if ($superAdminRoleId && $superAdmin->id) {
+            DB::table('model_has_roles')->updateOrInsert(
+                [
+                    'role_id'    => $superAdminRoleId,
+                    'model_id'   => $superAdmin->id,
+                    'model_type' => User::class,
+                ],
+                ['assigned_by' => $superAdmin->id, 'assigned_at' => now()],
+            );
+        }
 
         $this->command->info('✓ Roles: ' . count(self::ROLES));
         $this->command->info('✓ Permisos: ' . count(self::PERMISSIONS));
