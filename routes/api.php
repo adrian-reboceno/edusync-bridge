@@ -1,5 +1,6 @@
 <?php
 
+use Academic\Student\Infrastructure\Http\Controllers\UserAnalyticsController;
 use Auth\AuditLog\Infrastructure\Http\Controllers\AuditLogController;
 use Auth\Role\Infrastructure\Http\Controllers\RoleController;
 use Auth\User\Infrastructure\Http\Controllers\AuthController;
@@ -29,4 +30,16 @@ Route::prefix('v1')->middleware('rbac2')->group(function (): void {
     Route::get('roles', [RoleController::class, 'index'])->middleware('rbac2:auth.roles.view');
     Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('rbac2:auth.audit.view');
     Route::get('audit-logs/export', [AuditLogController::class, 'export'])->middleware('rbac2:auth.audit.export');
+});
+
+Route::prefix('v1/analytics')->middleware('rbac2')->group(function (): void {
+    Route::get('users/summary', [UserAnalyticsController::class, 'summary'])
+        ->middleware('rbac2:reports.sync.view');
+    Route::get('users/daily-access', [UserAnalyticsController::class, 'dailyAccess'])
+        ->middleware('rbac2:reports.sync.view');
+    Route::get('users/{neoId}', [UserAnalyticsController::class, 'show'])
+        ->whereNumber('neoId')
+        ->middleware('rbac2:reports.sync.view');
+    Route::get('users', [UserAnalyticsController::class, 'index'])
+        ->middleware('rbac2:reports.sync.view');
 });

@@ -47,14 +47,42 @@ final class NeoHttpAdapter implements NeoLmsApiContract
     // USUARIOS
     // ─────────────────────────────────────────────────────────────
 
-    public function listUsers(array $filters = []): array
+    public function listUsers(array $filters = [], string $include = ''): array
     {
+        if ($include !== '') {
+            $filters['$include'] = $include;
+        }
+
         return $this->paginateAll('users', $filters);
     }
 
     public function getUser(int $neoId): array
     {
         return $this->get("users/{$neoId}");
+    }
+
+    public function getUserSessions(int $neoUserId, ?int $after = null): array
+    {
+        $params = ['$limit' => $this->pageSize];
+
+        if ($after !== null) {
+            $params['$after'] = $after;
+        }
+
+        $results = [];
+
+        do {
+            $page = $this->get("users/{$neoUserId}/sessions", $params);
+
+            if ($page === []) {
+                break;
+            }
+
+            array_push($results, ...$page);
+            $params['$after'] = $page[array_key_last($page)]['id'] ?? null;
+        } while (count($page) >= $this->pageSize && $params['$after'] !== null);
+
+        return $results;
     }
 
     public function getUserByUserId(string $userId): ?array
