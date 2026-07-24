@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\User;
@@ -21,51 +23,51 @@ class AuthSeeder extends Seeder
 
     private const array PERMISSIONS = [
         // auth
-        'auth.users.create'         => 'Crear usuarios',
-        'auth.users.view'           => 'Ver usuarios',
-        'auth.users.edit'           => 'Editar usuarios',
-        'auth.users.deactivate'     => 'Desactivar usuarios',
-        'auth.users.unlock'         => 'Desbloquear cuentas',
+        'auth.users.create' => 'Crear usuarios',
+        'auth.users.view' => 'Ver usuarios',
+        'auth.users.edit' => 'Editar usuarios',
+        'auth.users.deactivate' => 'Desactivar usuarios',
+        'auth.users.unlock' => 'Desbloquear cuentas',
         'auth.users.force-password' => 'Forzar cambio de contraseña',
-        'auth.roles.view'           => 'Ver roles y permisos',
-        'auth.roles.assign'         => 'Asignar roles',
-        'auth.roles.revoke'         => 'Revocar roles',
-        'auth.sessions.view'        => 'Ver sesiones activas',
-        'auth.sessions.revoke'      => 'Revocar sesiones',
-        'auth.audit.view'           => 'Ver audit log',
-        'auth.audit.export'         => 'Exportar audit log',
+        'auth.roles.view' => 'Ver roles y permisos',
+        'auth.roles.assign' => 'Asignar roles',
+        'auth.roles.revoke' => 'Revocar roles',
+        'auth.sessions.view' => 'Ver sesiones activas',
+        'auth.sessions.revoke' => 'Revocar sesiones',
+        'auth.audit.view' => 'Ver audit log',
+        'auth.audit.export' => 'Exportar audit log',
         // sync
-        'sync.students.view'        => 'Ver sync de alumnos',
-        'sync.students.trigger'     => 'Disparar sync de alumnos',
-        'sync.teachers.view'        => 'Ver sync de docentes',
-        'sync.teachers.trigger'     => 'Disparar sync de docentes',
-        'sync.enrollments.view'     => 'Ver sync de inscripciones',
-        'sync.enrollments.trigger'  => 'Disparar sync de inscripciones',
-        'sync.programs.view'        => 'Ver sync de programas de estudio',
-        'sync.programs.trigger'     => 'Disparar sync de programas',
-        'sync.grades.view'          => 'Ver sync de calificaciones',
-        'sync.grades.trigger'       => 'Disparar sync de calificaciones',
+        'sync.students.view' => 'Ver sync de alumnos',
+        'sync.students.trigger' => 'Disparar sync de alumnos',
+        'sync.teachers.view' => 'Ver sync de docentes',
+        'sync.teachers.trigger' => 'Disparar sync de docentes',
+        'sync.enrollments.view' => 'Ver sync de inscripciones',
+        'sync.enrollments.trigger' => 'Disparar sync de inscripciones',
+        'sync.programs.view' => 'Ver sync de programas de estudio',
+        'sync.programs.trigger' => 'Disparar sync de programas',
+        'sync.grades.view' => 'Ver sync de calificaciones',
+        'sync.grades.trigger' => 'Disparar sync de calificaciones',
         // csv
-        'csv.upload'                => 'Subir archivos CSV',
-        'csv.preview'               => 'Previsualizar CSV',
-        'csv.validate'              => 'Validar CSV',
-        'csv.process'               => 'Procesar CSV a NEO LMS',
+        'csv.upload' => 'Subir archivos CSV',
+        'csv.preview' => 'Previsualizar CSV',
+        'csv.validate' => 'Validar CSV',
+        'csv.process' => 'Procesar CSV a NEO LMS',
         // scheduler
-        'scheduler.view'            => 'Ver configuración del scheduler',
-        'scheduler.edit'            => 'Editar horarios de Jobs',
-        'scheduler.toggle'          => 'Activar/desactivar Jobs',
+        'scheduler.view' => 'Ver configuración del scheduler',
+        'scheduler.edit' => 'Editar horarios de Jobs',
+        'scheduler.toggle' => 'Activar/desactivar Jobs',
         // adapter
-        'adapter.view'              => 'Ver configuración de adaptadores',
-        'adapter.switch'            => 'Cambiar adaptador CE (DB o API)',
-        'adapter.credentials'       => 'Editar credenciales de adaptadores',
-        'adapter.health-check'      => 'Ejecutar health-check de adaptadores',
+        'adapter.view' => 'Ver configuración de adaptadores',
+        'adapter.switch' => 'Cambiar adaptador CE (DB o API)',
+        'adapter.credentials' => 'Editar credenciales de adaptadores',
+        'adapter.health-check' => 'Ejecutar health-check de adaptadores',
         // horizon
-        'horizon.view'              => 'Ver dashboard de Horizon',
-        'horizon.manage'            => 'Pausar/reanudar Horizon',
+        'horizon.view' => 'Ver dashboard de Horizon',
+        'horizon.manage' => 'Pausar/reanudar Horizon',
         // reports
-        'reports.sync.view'         => 'Ver reportes de sincronización',
-        'reports.sync.export'       => 'Exportar reportes de sync',
-        'reports.errors.view'       => 'Ver errores de sync',
+        'reports.sync.view' => 'Ver reportes de sincronización',
+        'reports.sync.export' => 'Exportar reportes de sync',
+        'reports.errors.view' => 'Ver errores de sync',
     ];
 
     private const array ROLE_PERMISSIONS = [
@@ -124,10 +126,10 @@ class AuthSeeder extends Seeder
             $roles[$role['name']] = EloquentRoleModel::query()->updateOrCreate(
                 ['name' => $role['name'], 'guard_name' => 'api'],
                 [
-                    'display_name'       => $role['display_name'],
-                    'hierarchy_level'    => $role['hierarchy_level'],
-                    'is_system'          => $role['is_system'],
-                    'two_factor_required'=> $role['two_factor_required'],
+                    'display_name' => $role['display_name'],
+                    'hierarchy_level' => $role['hierarchy_level'],
+                    'is_system' => $role['is_system'],
+                    'two_factor_required' => $role['two_factor_required'],
                 ],
             );
         }
@@ -162,6 +164,7 @@ class AuthSeeder extends Seeder
 
             if ($roleId === null) {
                 $this->command->warn("Rol no encontrado: {$roleName}");
+
                 continue;
             }
 
@@ -178,6 +181,7 @@ class AuthSeeder extends Seeder
                 $permId = $permissionIds[$permName] ?? null;
                 if ($permId === null) {
                     $this->command->warn("Permiso no encontrado: {$permName}");
+
                     continue;
                 }
                 $inserts[] = ['role_id' => $roleId, 'permission_id' => $permId];
@@ -208,16 +212,17 @@ class AuthSeeder extends Seeder
 
             if ($roleAId === null || $roleBId === null) {
                 $this->command->warn("Rol no encontrado para exclusión: {$a} / {$b}");
+
                 continue;
             }
 
             DB::table('role_exclusions')->updateOrInsert(
                 ['role_a_id' => $roleAId, 'role_b_id' => $roleBId],
                 [
-                    'id'         => (string) Str::uuid(),
-                    'level'      => $level,
-                    'reason'     => $reason,
-                    'is_system'  => true,
+                    'id' => (string) Str::uuid(),
+                    'level' => $level,
+                    'reason' => $reason,
+                    'is_system' => true,
                     'created_at' => now(),
                 ],
             );
@@ -227,12 +232,12 @@ class AuthSeeder extends Seeder
         $superAdmin = User::query()->updateOrCreate(
             ['email' => 'admin@edusync.edu'],
             [
-                'first_name'           => 'Super',
-                'last_name'            => 'Admin',
-                'password_hash'        => Hash::make('Admin@2024!'),
-                'status'               => 'ACTIVE',
+                'first_name' => 'Super',
+                'last_name' => 'Admin',
+                'password_hash' => Hash::make('Admin@2024!'),
+                'status' => 'ACTIVE',
                 'must_change_password' => true,
-                'email_verified_at'    => now(),
+                'email_verified_at' => now(),
             ],
         );
 
@@ -241,8 +246,8 @@ class AuthSeeder extends Seeder
         if ($superAdminRoleId && $superAdmin->id) {
             DB::table('model_has_roles')->updateOrInsert(
                 [
-                    'role_id'    => $superAdminRoleId,
-                    'model_id'   => $superAdmin->id,
+                    'role_id' => $superAdminRoleId,
+                    'model_id' => $superAdmin->id,
                     'model_type' => User::class,
                 ],
                 ['assigned_by' => $superAdmin->id, 'assigned_at' => now()],

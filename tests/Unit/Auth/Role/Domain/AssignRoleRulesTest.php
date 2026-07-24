@@ -14,6 +14,7 @@ use Auth\Role\Domain\Exceptions\SuperAdminExclusiveException;
 use Auth\Role\Domain\Ports\RoleRepositoryContract;
 use Auth\Role\Domain\ValueObjects\HierarchyLevel;
 use Auth\Role\Domain\ValueObjects\RoleName;
+use Auth\User\Domain\Ports\UserRepositoryContract;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use Shared\Domain\Contracts\EventBusContract;
@@ -29,6 +30,7 @@ final class AssignRoleRulesTest extends TestCase
             $this->createStub(RoleRepositoryContract::class),
             $this->createStub(AuditLogRepositoryContract::class),
             $this->createStub(EventBusContract::class),
+            $this->createStub(UserRepositoryContract::class), 
         );
     }
 
@@ -82,6 +84,7 @@ final class AssignRoleRulesTest extends TestCase
             $roles,
             $this->createStub(AuditLogRepositoryContract::class),
             $this->createStub(EventBusContract::class),
+            $this->createStub(UserRepositoryContract::class),
         );
 
         $this->expectException(SoDViolationException::class);
@@ -100,6 +103,7 @@ final class AssignRoleRulesTest extends TestCase
             $roles,
             $this->createStub(AuditLogRepositoryContract::class),
             $this->createStub(EventBusContract::class),
+            $this->createStub(UserRepositoryContract::class),
         );
 
         (new ReflectionMethod($useCase, 'assertNoSoDConflict'))->invokeArgs($useCase, [$auditor, []]);

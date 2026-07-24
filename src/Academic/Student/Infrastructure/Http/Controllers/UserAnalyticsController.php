@@ -11,10 +11,15 @@ use Academic\Student\Application\GetAnalytics\GetUsersListQuery;
 use Academic\Student\Application\GetAnalytics\GetUsersListUseCase;
 use Academic\Student\Application\GetAnalytics\GetUsersSummaryUseCase;
 use Academic\Student\Application\GetAnalytics\UsersSummaryResult;
+use Academic\Student\Infrastructure\Http\Requests\GetDailyAccessRequest;
+use Academic\Student\Infrastructure\Http\Requests\GetUsersListRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
+/**
+ * @tags Analytics - Usuarios
+ */
 final class UserAnalyticsController extends Controller
 {
     public function __construct(
@@ -24,7 +29,13 @@ final class UserAnalyticsController extends Controller
         private readonly GetUserDetailUseCase $detailUseCase,
     ) {}
 
-    public function summary(Request $request): JsonResponse
+    /**
+     * Resumen general de usuarios
+     *
+     * Retorna totales, distribución por rol, tasa de activación
+     * y estadísticas de sesiones de la organización.
+     */
+    public function summary(): JsonResponse
     {
         $result = $this->summaryUseCase->execute();
 
@@ -34,7 +45,13 @@ final class UserAnalyticsController extends Controller
         ]);
     }
 
-    public function index(Request $request): JsonResponse
+    /**
+     * Lista paginada de usuarios
+     *
+     * Retorna todos los usuarios con datos de actividad y sesiones.
+     * Soporta filtrado por rol, estado de activación y búsqueda.
+     */
+    public function index(GetUsersListRequest $request): JsonResponse
     {
         $perPage = min((int) $request->input('per_page', 20), 100);
         $page = max((int) $request->input('page', 1), 1);
@@ -66,7 +83,14 @@ final class UserAnalyticsController extends Controller
         ]);
     }
 
-    public function dailyAccess(Request $request): JsonResponse
+    /**
+     * Accesos diarios
+     *
+     * Retorna sesiones agregadas por día para el período indicado.
+     * Incluye días sin actividad (valor 0) para series de tiempo continuas.
+     * Útil para gráficas de barras de actividad.
+     */
+    public function dailyAccess(GetDailyAccessRequest $request): JsonResponse
     {
         $days = min((int) $request->input('days', 30), 365);
         $userId = $request->filled('user_id') ? (int) $request->input('user_id') : null;
@@ -92,6 +116,12 @@ final class UserAnalyticsController extends Controller
         ]);
     }
 
+    /**
+     * Detalle de un usuario
+     *
+     * Retorna perfil completo, resumen de sesiones y actividad diaria
+     * del usuario indicado por su ID de NEO LMS. Responde 404 si el usuario no existe.
+     */
     public function show(Request $request, int $neoId): JsonResponse
     {
         $result = $this->detailUseCase->execute($neoId);

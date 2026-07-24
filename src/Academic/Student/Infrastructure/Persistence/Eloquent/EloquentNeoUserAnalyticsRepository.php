@@ -119,7 +119,7 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
                 'u.roles', 'u.organization_name', 'u.language', 'u.time_zone',
                 'u.joined_at', 'u.first_login_at', 'u.last_login_at',
                 DB::raw('(u.first_login_at IS NOT NULL) AS activated'),
-                DB::raw("EXTRACT(DAY FROM NOW() - u.last_login_at)::int AS days_since_login"),
+                DB::raw('EXTRACT(DAY FROM NOW() - u.last_login_at)::int AS days_since_login'),
                 DB::raw('COUNT(s.neo_session_id) AS total_sessions'),
             ]);
 

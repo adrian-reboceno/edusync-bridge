@@ -19,7 +19,7 @@ final readonly class RoleSwitched implements DomainEvent
         public Uuid $toRoleId,
         ?DateTimeImmutable $occurredAt = null,
     ) {
-        $this->occurredAt = $occurredAt ?? new DateTimeImmutable();
+        $this->occurredAt = $occurredAt ?? new DateTimeImmutable;
     }
 
     public function occurredAt(): DateTimeImmutable

@@ -10,6 +10,7 @@ use Auth\User\Domain\Events\LoginFailed;
 use Auth\User\Domain\Exceptions\AccountLockedException;
 use Auth\User\Domain\ValueObjects\Email;
 use Auth\User\Domain\ValueObjects\Password;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class UserTest extends TestCase
@@ -93,7 +94,7 @@ final class UserTest extends TestCase
         $user->lock(15);
 
         self::assertTrue($user->getStatus()->isLocked());
-        self::assertGreaterThan(new \DateTimeImmutable(), $user->getLockedUntil());
+        self::assertGreaterThan(new DateTimeImmutable, $user->getLockedUntil());
     }
 
     public function test_assert_not_locked_throws_while_lock_window_is_active(): void

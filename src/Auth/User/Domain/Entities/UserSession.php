@@ -37,7 +37,7 @@ final class UserSession
         ?Uuid $activeRoleId = null,
         ?Uuid $id = null,
     ): self {
-        $now = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
 
         return new self(
             id: $id ?? Uuid::generate(),
@@ -155,13 +155,13 @@ final class UserSession
 
     public function isRefreshExpired(): bool
     {
-        return $this->refreshExpiresAt < new DateTimeImmutable();
+        return $this->refreshExpiresAt < new DateTimeImmutable;
     }
 
     public function activateRole(Uuid $roleId): void
     {
         $this->activeRoleId = $roleId;
-        $this->roleActivatedAt = new DateTimeImmutable();
+        $this->roleActivatedAt = new DateTimeImmutable;
     }
 
     public function rotateTokens(
@@ -179,11 +179,11 @@ final class UserSession
 
     public function touch(): void
     {
-        $this->lastActivityAt = new DateTimeImmutable();
+        $this->lastActivityAt = new DateTimeImmutable;
     }
 
     public function revoke(): void
     {
-        $this->revokedAt = new DateTimeImmutable();
+        $this->revokedAt = new DateTimeImmutable;
     }
 }

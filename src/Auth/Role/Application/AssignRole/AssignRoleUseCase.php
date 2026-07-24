@@ -97,7 +97,7 @@ final readonly class AssignRoleUseCase
         if ($conflicting !== []) {
             throw new SoDViolationException(
                 $conflicting,
-                "Role '{$target->getName()->toString()}' conflicts with currently assigned role(s): ".implode(', ', $conflicting),
+                "Role '{$target->getName()->toString()}' conflicts with currently assigned role(s): " . implode(', ', $conflicting),
             );
         }
     }
@@ -118,12 +118,12 @@ final readonly class AssignRoleUseCase
     private function assertSuperAdminExclusive(Role $target, array $currentRoles): void
     {
         if ($target->isExclusive() && $currentRoles !== []) {
-            throw new SuperAdminExclusiveException();
+            throw new SuperAdminExclusiveException;
         }
 
         foreach ($currentRoles as $currentRole) {
             if ($currentRole->isExclusive()) {
-                throw new SuperAdminExclusiveException();
+                throw new SuperAdminExclusiveException;
             }
         }
     }

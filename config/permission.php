@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Auth\Role\Infrastructure\Persistence\Eloquent\EloquentPermissionModel;
 use Auth\Role\Infrastructure\Persistence\Eloquent\EloquentRoleModel;
 use Spatie\Permission\DefaultTeamResolver;

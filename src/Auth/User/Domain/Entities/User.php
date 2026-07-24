@@ -51,7 +51,7 @@ final class User
         ?string $phone = null,
         ?Uuid $createdBy = null,
     ): self {
-        $now = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
 
         $user = new self(
             id: Uuid::generate(),
@@ -240,7 +240,7 @@ final class User
     public function lock(int $durationMinutes): void
     {
         $this->status = UserStatus::LOCKED;
-        $this->lockedUntil = (new DateTimeImmutable())->modify("+{$durationMinutes} minutes");
+        $this->lockedUntil = (new DateTimeImmutable)->modify("+{$durationMinutes} minutes");
         $this->touch();
 
         $this->record(new AccountLocked($this->id, $this->lockedUntil, $durationMinutes));
@@ -260,13 +260,13 @@ final class User
             return;
         }
 
-        if ($this->lockedUntil !== null && $this->lockedUntil <= new DateTimeImmutable()) {
+        if ($this->lockedUntil !== null && $this->lockedUntil <= new DateTimeImmutable) {
             $this->unlock();
 
             return;
         }
 
-        throw new AccountLockedException($this->lockedUntil ?? new DateTimeImmutable());
+        throw new AccountLockedException($this->lockedUntil ?? new DateTimeImmutable);
     }
 
     public function checkPasswordExpiry(int $maxAgeDays = 90): bool
@@ -277,7 +277,7 @@ final class User
 
         $expiresAt = $this->passwordChangedAt->modify("+{$maxAgeDays} days");
 
-        return $expiresAt <= new DateTimeImmutable();
+        return $expiresAt <= new DateTimeImmutable;
     }
 
     /**
@@ -307,21 +307,21 @@ final class User
     public function changePassword(HashedPassword $newPasswordHash): void
     {
         $this->passwordHash = $newPasswordHash;
-        $this->passwordChangedAt = new DateTimeImmutable();
+        $this->passwordChangedAt = new DateTimeImmutable;
         $this->mustChangePassword = false;
         $this->touch();
     }
 
     public function recordLogin(): void
     {
-        $this->lastLoginAt = new DateTimeImmutable();
+        $this->lastLoginAt = new DateTimeImmutable;
         $this->lastActivityAt = $this->lastLoginAt;
         $this->resetFailedAttempts();
     }
 
     public function verifyEmail(): void
     {
-        $this->emailVerifiedAt = new DateTimeImmutable();
+        $this->emailVerifiedAt = new DateTimeImmutable;
 
         if ($this->status === UserStatus::PENDING_VERIFICATION) {
             $this->status = UserStatus::ACTIVE;
@@ -348,6 +348,6 @@ final class User
 
     private function touch(): void
     {
-        $this->updatedAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable;
     }
 }

@@ -18,7 +18,7 @@ final readonly class LoginFailed implements DomainEvent
         public string $ipAddress,
         ?DateTimeImmutable $occurredAt = null,
     ) {
-        $this->occurredAt = $occurredAt ?? new DateTimeImmutable();
+        $this->occurredAt = $occurredAt ?? new DateTimeImmutable;
     }
 
     public function occurredAt(): DateTimeImmutable

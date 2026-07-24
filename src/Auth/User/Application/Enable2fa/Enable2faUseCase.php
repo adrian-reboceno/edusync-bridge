@@ -10,6 +10,7 @@ use Auth\User\Domain\Exceptions\InvalidCredentialsException;
 use Auth\User\Domain\Ports\TotpServiceContract;
 use Auth\User\Domain\Ports\UserRepositoryContract;
 use Auth\User\Domain\ValueObjects\Email;
+use RuntimeException;
 
 final readonly class Enable2faUseCase
 {
@@ -24,7 +25,7 @@ final readonly class Enable2faUseCase
         $user = $this->users->findByEmail(new Email($command->email));
 
         if ($user === null) {
-            throw new \RuntimeException('User not found.');
+            throw new RuntimeException('User not found.');
         }
 
         if (! $this->totp->verify($command->secret, $command->totpCode)) {

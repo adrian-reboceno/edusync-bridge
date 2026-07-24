@@ -57,7 +57,7 @@ final readonly class AuditLog
             ipAddress: $ipAddress,
             userAgent: $userAgent,
             status: $status,
-            timestamp: new DateTimeImmutable(),
+            timestamp: new DateTimeImmutable,
         );
     }
 

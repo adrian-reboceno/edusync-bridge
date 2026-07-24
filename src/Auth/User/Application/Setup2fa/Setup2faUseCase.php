@@ -11,6 +11,7 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
+use RuntimeException;
 
 final readonly class Setup2faUseCase
 {
@@ -24,7 +25,7 @@ final readonly class Setup2faUseCase
         $user = $this->users->findByEmail(new Email($command->email));
 
         if ($user === null) {
-            throw new \RuntimeException('User not found.');
+            throw new RuntimeException('User not found.');
         }
 
         $secret = $this->totp->generateSecret();
@@ -34,7 +35,7 @@ final readonly class Setup2faUseCase
             email: $user->getEmail()->toString(),
         );
 
-        $renderer = new ImageRenderer(new RendererStyle(200), new SvgImageBackEnd());
+        $renderer = new ImageRenderer(new RendererStyle(200), new SvgImageBackEnd);
         $qrSvg = base64_encode((new Writer($renderer))->writeString($qrCodeUrl));
 
         return new Setup2faResult(
