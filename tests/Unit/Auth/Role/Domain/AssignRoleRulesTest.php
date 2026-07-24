@@ -30,7 +30,7 @@ final class AssignRoleRulesTest extends TestCase
             $this->createStub(RoleRepositoryContract::class),
             $this->createStub(AuditLogRepositoryContract::class),
             $this->createStub(EventBusContract::class),
-            $this->createStub(UserRepositoryContract::class), 
+            $this->createStub(UserRepositoryContract::class),
         );
     }
 
