@@ -9,10 +9,10 @@ use DateTimeImmutable;
 final readonly class NeoUserSessionDTO
 {
     public function __construct(
-        public int     $neoSessionId,
-        public int     $neoUserId,
+        public int $neoSessionId,
+        public int $neoUserId,
         public ?string $sisId,
-        public string  $loginAt,
+        public string $loginAt,
         public ?string $logoutAt,
         public ?string $ipAddress,
     ) {}
@@ -21,11 +21,11 @@ final readonly class NeoUserSessionDTO
     {
         return new self(
             neoSessionId: (int) $data['id'],
-            neoUserId:    (int) $data['user_id'],
-            sisId:        $sisId,
-            loginAt:      $data['login_at'],
-            logoutAt:     $data['logout_at'] ?? null,
-            ipAddress:    $data['ip_address'] ?? null,
+            neoUserId: (int) $data['user_id'],
+            sisId: $sisId,
+            loginAt: $data['login_at'],
+            logoutAt: $data['logout_at'] ?? null,
+            ipAddress: $data['ip_address'] ?? null,
         );
     }
 

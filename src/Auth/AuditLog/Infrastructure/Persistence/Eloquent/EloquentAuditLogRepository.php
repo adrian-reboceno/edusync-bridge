@@ -8,7 +8,6 @@ use Auth\AuditLog\Domain\Entities\AuditLog;
 use Auth\AuditLog\Domain\Ports\AuditLogRepositoryContract;
 use Auth\AuditLog\Domain\ValueObjects\AuditLogFilter;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use League\Csv\Writer;
 use Shared\Domain\ValueObjects\Uuid;
 

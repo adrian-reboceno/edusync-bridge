@@ -18,7 +18,7 @@ final readonly class RoleRevoked implements DomainEvent
         public Uuid $revokedBy,
         ?DateTimeImmutable $occurredAt = null,
     ) {
-        $this->occurredAt = $occurredAt ?? new DateTimeImmutable();
+        $this->occurredAt = $occurredAt ?? new DateTimeImmutable;
     }
 
     public function occurredAt(): DateTimeImmutable

@@ -29,7 +29,7 @@ final class NeoHttpAdapter implements NeoLmsApiContract
     ) {
         $this->pageSize = min($pageSize, 100);
         $this->client = new Client([
-            'base_uri' => rtrim($baseUrl, '/').'/',
+            'base_uri' => rtrim($baseUrl, '/') . '/',
             'timeout' => $timeout,
             'headers' => [
                 'X-Api-Key' => $apiKey,
@@ -167,7 +167,7 @@ final class NeoHttpAdapter implements NeoLmsApiContract
     public function addClassTemplateTeachersBatch(int $classTemplateId, array $userIds): int
     {
         return $this->extractBatchId(
-            $this->post("class_templates/{$classTemplateId}/teachers/batch", $this->toUserIdPayload($userIds))
+            $this->post("class_templates/{$classTemplateId}/teachers/batch", $this->toUserIdPayload($userIds)),
         );
     }
 
@@ -245,8 +245,8 @@ final class NeoHttpAdapter implements NeoLmsApiContract
             $this->post(
                 "classes/{$classId}/students/batch",
                 $this->toUserIdPayload($userIds),
-                $this->toOptionsQuery($options)
-            )
+                $this->toOptionsQuery($options),
+            ),
         );
     }
 
@@ -282,7 +282,7 @@ final class NeoHttpAdapter implements NeoLmsApiContract
     public function assignTeachersBatch(int $classId, array $userIds): int
     {
         return $this->extractBatchId(
-            $this->post("classes/{$classId}/teachers/batch", $this->toUserIdPayload($userIds))
+            $this->post("classes/{$classId}/teachers/batch", $this->toUserIdPayload($userIds)),
         );
     }
 
@@ -496,7 +496,6 @@ final class NeoHttpAdapter implements NeoLmsApiContract
 
         return $results[0] ?? null;
     }
-
 
     private function findOneByUserId(string $endpoint, string $userId): ?array
     {

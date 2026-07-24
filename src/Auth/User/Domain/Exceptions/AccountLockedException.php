@@ -13,7 +13,7 @@ final class AccountLockedException extends DomainException
         private readonly DateTimeImmutable $lockedUntil,
     ) {
         parent::__construct(
-            message: 'The account is locked until '.$lockedUntil->format(DateTimeImmutable::ATOM).'.',
+            message: 'The account is locked until ' . $lockedUntil->format(DateTimeImmutable::ATOM) . '.',
             errorCode: 'ACCOUNT_LOCKED',
             context: ['locked_until' => $lockedUntil->format(DateTimeImmutable::ATOM)],
         );

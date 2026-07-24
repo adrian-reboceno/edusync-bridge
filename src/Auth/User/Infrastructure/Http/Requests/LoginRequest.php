@@ -13,6 +13,9 @@ final class LoginRequest extends FormRequest
         return true;
     }
 
+    /**
+     * @bodyParam client_type string optional Tipo de cliente que realiza la autenticación. WEB genera refresh token con TTL de 7 días, MOBILE de 30 días. Si no se envía se asume WEB. Example: WEB
+     */
     public function rules(): array
     {
         return [

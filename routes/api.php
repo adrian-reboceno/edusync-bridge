@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Academic\Student\Infrastructure\Http\Controllers\UserAnalyticsController;
 use Auth\AuditLog\Infrastructure\Http\Controllers\AuditLogController;
 use Auth\Role\Infrastructure\Http\Controllers\RoleController;
@@ -10,13 +12,13 @@ Route::prefix('v1/auth')->group(function (): void {
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     Route::post('refresh', [AuthController::class, 'refresh']);
     Route::post('2fa/verify', [AuthController::class, 'verify2fa'])->middleware('throttle:5,1');
-    Route::post('2fa/setup',  [AuthController::class, 'setup2fa']);
+    Route::post('2fa/setup', [AuthController::class, 'setup2fa']);
     Route::post('2fa/enable', [AuthController::class, 'enable2fa']);
 
     Route::middleware('rbac2')->group(function (): void {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('session/role', [AuthController::class, 'switchRole']);
-        Route::get('me',             [AuthController::class, 'me']);
+        Route::get('me', [AuthController::class, 'me']);
     });
 });
 

@@ -43,8 +43,8 @@ final class AuthServiceProvider extends ServiceProvider
         // __DIR__ = src/Auth/User/Infrastructure/Providers; three levels up is src/Auth
         $authPath = dirname(__DIR__, 3);
 
-        $this->loadMigrationsFrom($authPath.'/User/Infrastructure/Persistence/Migrations');
-        $this->loadMigrationsFrom($authPath.'/Role/Infrastructure/Persistence/Migrations');
-        $this->loadMigrationsFrom($authPath.'/AuditLog/Infrastructure/Persistence/Migrations');
+        $this->loadMigrationsFrom($authPath . '/User/Infrastructure/Persistence/Migrations');
+        $this->loadMigrationsFrom($authPath . '/Role/Infrastructure/Persistence/Migrations');
+        $this->loadMigrationsFrom($authPath . '/AuditLog/Infrastructure/Persistence/Migrations');
     }
 }

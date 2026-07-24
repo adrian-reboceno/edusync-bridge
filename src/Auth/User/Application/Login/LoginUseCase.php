@@ -49,7 +49,7 @@ final readonly class LoginUseCase
         $user = $this->users->findByEmail(new Email($command->email));
 
         if ($user === null) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException;
         }
 
         $user->assertNotLocked();
@@ -57,11 +57,11 @@ final readonly class LoginUseCase
         if (! $user->verifyPassword(new Password($command->password))) {
             $this->handleFailedAttempt($user, $command->ipAddress);
 
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException;
         }
 
         if (! $user->getStatus()->canLogin()) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException;
         }
 
         $roles = $this->roles->getByUser($user->getId());
@@ -79,7 +79,7 @@ final readonly class LoginUseCase
             }
             $secret = $user->getTwoFactorSecret();
             if ($secret === null || ! $this->totp->verify($secret, $command->totpCode)) {
-                throw new InvalidCredentialsException();
+                throw new InvalidCredentialsException;
             }
         }
 
@@ -181,7 +181,7 @@ final readonly class LoginUseCase
             }
         }
 
-        throw new InvalidCredentialsException();
+        throw new InvalidCredentialsException;
     }
 
     /**
@@ -211,8 +211,8 @@ final readonly class LoginUseCase
             clientType: $command->clientType,
             accessTokenHash: $this->tokens->hash($accessToken),
             refreshTokenHash: $this->tokens->hash($refreshToken),
-            accessExpiresAt: (new DateTimeImmutable())->modify('+'.self::ACCESS_TOKEN_TTL_MINUTES.' minutes'),
-            refreshExpiresAt: (new DateTimeImmutable())->modify("+{$refreshTtlDays} days"),
+            accessExpiresAt: (new DateTimeImmutable)->modify('+' . self::ACCESS_TOKEN_TTL_MINUTES . ' minutes'),
+            refreshExpiresAt: (new DateTimeImmutable)->modify("+{$refreshTtlDays} days"),
             ipAddress: $command->ipAddress,
             userAgent: $command->userAgent,
             activeRoleId: $activeRole?->getId(),

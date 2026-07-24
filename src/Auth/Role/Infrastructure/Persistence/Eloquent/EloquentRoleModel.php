@@ -29,7 +29,7 @@ final class EloquentRoleModel extends SpatieRole
     {
         parent::boot();
 
-        static::creating(function (self $model): void {
+        self::creating(function (self $model): void {
             if ($model->id === null) {
                 $model->id = (string) Str::uuid();
             }

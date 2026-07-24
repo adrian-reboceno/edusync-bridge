@@ -60,7 +60,7 @@ final readonly class SwitchRoleUseCase
         $session->rotateTokens(
             accessTokenHash: $this->tokens->hash($newAccessToken),
             refreshTokenHash: $session->getRefreshTokenHash(),
-            accessExpiresAt: (new DateTimeImmutable())->modify('+'.self::ACCESS_TOKEN_TTL_MINUTES.' minutes'),
+            accessExpiresAt: (new DateTimeImmutable)->modify('+' . self::ACCESS_TOKEN_TTL_MINUTES . ' minutes'),
             refreshExpiresAt: $session->getRefreshExpiresAt(),
         );
         $this->sessions->save($session);

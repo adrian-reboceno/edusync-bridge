@@ -78,7 +78,7 @@ final class SanctumTokenService implements TokenServiceContract
             return;
         }
 
-        Redis::setex(self::BLACKLIST_PREFIX.$jti, $ttlSeconds, '1');
+        Redis::setex(self::BLACKLIST_PREFIX . $jti, $ttlSeconds, '1');
     }
 
     public function isBlacklisted(string $jti): bool
@@ -87,7 +87,7 @@ final class SanctumTokenService implements TokenServiceContract
             return true;
         }
 
-        return (bool) Redis::exists(self::BLACKLIST_PREFIX.$jti);
+        return (bool) Redis::exists(self::BLACKLIST_PREFIX . $jti);
     }
 
     private function encode(array $payload): string

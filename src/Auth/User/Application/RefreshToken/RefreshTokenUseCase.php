@@ -27,20 +27,20 @@ final readonly class RefreshTokenUseCase
         try {
             $payload = $this->tokens->verifyRefreshToken($command->refreshToken);
         } catch (Throwable) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException;
         }
 
         $jti = (string) ($payload['jti'] ?? '');
         $exp = (int) ($payload['exp'] ?? 0);
 
         if ($jti === '' || $this->tokens->isBlacklisted($jti)) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException;
         }
 
         $session = $this->sessions->findByRefreshTokenHash($this->tokens->hash($command->refreshToken));
 
         if ($session === null || $session->isRevoked() || $session->isRefreshExpired()) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException;
         }
 
         $ttlRemaining = max(0, $exp - time());
@@ -64,8 +64,8 @@ final readonly class RefreshTokenUseCase
         $session->rotateTokens(
             accessTokenHash: $this->tokens->hash($newAccessToken),
             refreshTokenHash: $this->tokens->hash($newRefreshToken),
-            accessExpiresAt: (new DateTimeImmutable())->modify('+'.self::ACCESS_TOKEN_TTL_MINUTES.' minutes'),
-            refreshExpiresAt: (new DateTimeImmutable())->modify("+{$refreshTtlSeconds} seconds"),
+            accessExpiresAt: (new DateTimeImmutable)->modify('+' . self::ACCESS_TOKEN_TTL_MINUTES . ' minutes'),
+            refreshExpiresAt: (new DateTimeImmutable)->modify("+{$refreshTtlSeconds} seconds"),
         );
 
         $this->sessions->save($session);

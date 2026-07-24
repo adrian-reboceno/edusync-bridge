@@ -34,7 +34,7 @@ final class SyncNeoUsersCommand extends Command
 
         $this->table(
             ['Total', 'Sincronizados', 'Sin cambios', 'Errores'],
-            [[$result->total, $result->synced, $result->skipped, count($result->errors)]]
+            [[$result->total, $result->synced, $result->skipped, count($result->errors)]],
         );
 
         if ($result->hasErrors()) {

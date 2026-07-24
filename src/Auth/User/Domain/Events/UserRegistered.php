@@ -17,7 +17,7 @@ final readonly class UserRegistered implements DomainEvent
         public string $email,
         ?DateTimeImmutable $occurredAt = null,
     ) {
-        $this->occurredAt = $occurredAt ?? new DateTimeImmutable();
+        $this->occurredAt = $occurredAt ?? new DateTimeImmutable;
     }
 
     public function occurredAt(): DateTimeImmutable

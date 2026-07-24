@@ -18,7 +18,7 @@ final readonly class AccountLocked implements DomainEvent
         public int $durationMinutes,
         ?DateTimeImmutable $occurredAt = null,
     ) {
-        $this->occurredAt = $occurredAt ?? new DateTimeImmutable();
+        $this->occurredAt = $occurredAt ?? new DateTimeImmutable;
     }
 
     public function occurredAt(): DateTimeImmutable

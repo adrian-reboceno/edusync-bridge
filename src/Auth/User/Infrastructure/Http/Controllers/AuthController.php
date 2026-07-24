@@ -26,6 +26,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
+/**
+ * @tags Auth
+ */
 final class AuthController extends Controller
 {
     public function __construct(
@@ -39,6 +42,15 @@ final class AuthController extends Controller
         private readonly GetMeUseCase $getMeUseCase,
     ) {}
 
+    /**
+     * Iniciar sesión
+     *
+     * Autentica al usuario con email y contraseña.
+     * Si el rol requiere 2FA y no está configurado, retorna requires_two_factor_setup=true.
+     * Si 2FA está configurado, retorna requires_two_factor=true y se debe enviar totp_code.
+     *
+     * @bodyParam client_type string optional Tipo de cliente. WEB = refresh token 7 días, MOBILE = 30 días. Default: WEB.
+     */
     public function login(LoginRequest $request): JsonResponse
     {
         $result = $this->loginUseCase->execute(new LoginCommand(
@@ -67,11 +79,22 @@ final class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Verificar código TOTP (2FA)
+     *
+     * Alias de login con totp_code incluido. Completa la autenticación de dos factores.
+     */
     public function verify2fa(LoginRequest $request): JsonResponse
     {
         return $this->login($request);
     }
 
+    /**
+     * Renovar access token
+     *
+     * Genera un nuevo par de tokens usando el refresh token.
+     * El refresh token anterior queda en blacklist (refresh rotation).
+     */
     public function refresh(RefreshTokenRequest $request): JsonResponse
     {
         $result = $this->refreshTokenUseCase->execute(new RefreshTokenCommand(
@@ -87,6 +110,11 @@ final class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Cerrar sesión
+     *
+     * Revoca la sesión activa y agrega el access token a la blacklist de Redis.
+     */
     public function logout(Request $request): JsonResponse
     {
         $this->logoutUseCase->execute(new LogoutCommand(
@@ -103,6 +131,12 @@ final class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Cambiar rol activo (DSoD)
+     *
+     * Cambia el rol activo en la sesión actual.
+     * Emite un nuevo access token con los permisos del rol seleccionado.
+     */
     public function switchRole(Request $request): JsonResponse
     {
         $result = $this->switchRoleUseCase->execute(new SwitchRoleCommand(
@@ -122,6 +156,12 @@ final class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Desbloquear cuenta de usuario
+     *
+     * Desbloquea una cuenta bloqueada por intentos fallidos.
+     * Requiere permiso: auth.users.unlock
+     */
     public function unlock(Request $request, string $id): JsonResponse
     {
         $this->unlockUserUseCase->execute(new UnlockUserCommand(
@@ -137,6 +177,12 @@ final class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Configurar autenticación de dos factores
+     *
+     * Genera un secreto TOTP y retorna el QR en base64 (SVG)
+     * para escanear con Google Authenticator o similar.
+     */
     public function setup2fa(Request $request): JsonResponse
     {
         $result = $this->setup2faUseCase->execute(new Setup2faCommand(
@@ -154,6 +200,12 @@ final class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Activar autenticación de dos factores
+     *
+     * Verifica el código TOTP con el secreto provisional y activa 2FA
+     * en la cuenta del usuario. A partir de este momento el login requiere código.
+     */
     public function enable2fa(Request $request): JsonResponse
     {
         $this->enable2faUseCase->execute(new Enable2faCommand(
@@ -170,6 +222,12 @@ final class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Obtener datos del usuario autenticado
+     *
+     * Retorna el perfil, rol activo y permisos del usuario autenticado
+     * a partir del JWT sin consultar la BD.
+     */
     public function me(Request $request): JsonResponse
     {
         $result = $this->getMeUseCase->execute(new GetMeQuery(

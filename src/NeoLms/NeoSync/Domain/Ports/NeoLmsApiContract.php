@@ -17,7 +17,7 @@ interface NeoLmsApiContract
      * Lista sesiones de un usuario con paginación por cursor.
      * Usa $after para obtener solo sesiones nuevas desde la última conocida.
      *
-     * @param int|null $after ID de la última sesión conocida (paginación incremental)
+     * @param  int|null  $after  ID de la última sesión conocida (paginación incremental)
      * @return array<int, array{id:int, user_id:int, login_at:string, logout_at:string|null, ip_address:string|null}>
      */
     public function getUserSessions(int $neoUserId, ?int $after = null): array;
@@ -25,7 +25,7 @@ interface NeoLmsApiContract
     /** Busca por sis_id (matrícula CE). Retorna null si no existe. */
     public function getUserBySisId(string $sisId): ?array;
 
-      /** Busca por sis_id (matrícula CE). Retorna null si no existe. */
+    /** Busca por sis_id (matrícula CE). Retorna null si no existe. */
     public function getUserByUserId(string $userId): ?array;
 
     /** Crea usuario. Requerido: first_name, last_name, roles */

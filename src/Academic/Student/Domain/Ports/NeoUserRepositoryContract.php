@@ -43,7 +43,7 @@ interface NeoUserRepositoryContract
      * Inserta sesiones de usuario. Solo inserta nuevas — nunca sobreescribe.
      * Una sesión es inmutable una vez creada en NEO.
      *
-     * @param NeoUserSessionDTO[] $sessions
+     * @param  NeoUserSessionDTO[]  $sessions
      * @return int número de sesiones nuevas insertadas
      */
     public function insertSessions(array $sessions): int;

@@ -26,7 +26,7 @@ final class EloquentPermissionModel extends SpatiePermission
     {
         parent::boot();
 
-        static::creating(function (self $model): void {
+        self::creating(function (self $model): void {
             if ($model->id === null) {
                 $model->id = (string) Str::uuid();
             }

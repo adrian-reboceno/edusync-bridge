@@ -22,7 +22,7 @@ class TestNeoConnection extends Command
 
         $this->info('[2] GET /users ($limit=3)...');
         $users = $neo->listUsers(['$limit' => 3]);
-        $this->info('Recibidos: '.count($users));
+        $this->info('Recibidos: ' . count($users));
         foreach ($users as $u) {
             $this->line("  [{$u['id']}] {$u['first_name']} {$u['last_name']} sis_id={$u['sis_id']}");
         }
@@ -31,21 +31,20 @@ class TestNeoConnection extends Command
         $u = $neo->getUserBySisId('Super Admin');
         $u ? $this->info("Encontrado: [{$u['id']}]") : $this->warn('No encontrado');
 
-
         $this->info('[3] getUserByUserId("Super Admin")...');
         $user = $neo->getUserByUserId('Super Admin');
         $user ? $this->info("Encontrado: [{$user['id']}]") : $this->warn('No encontrado');
 
         $this->info('[4] GET /classes ($limit=3)...');
         $classes = $neo->listClasses(['$limit' => 3]);
-        $this->info('Recibidas: '.count($classes));
+        $this->info('Recibidas: ' . count($classes));
         foreach ($classes as $c) {
-            $this->line("  [{$c['id']}] {$c['name']} sis_id=".($c['sis_id'] ?? 'N/A'));
+            $this->line("  [{$c['id']}] {$c['name']} sis_id=" . ($c['sis_id'] ?? 'N/A'));
         }
 
         $this->info('[5] GET /class_templates ($limit=3)...');
         $templates = $neo->listClassTemplates(['$limit' => 3]);
-        $this->info('Recibidos: '.count($templates));
+        $this->info('Recibidos: ' . count($templates));
 
         $this->info('[6] GET /batches ($limit=3)...');
         $batches = $neo->listBatches(['$limit' => 3]);

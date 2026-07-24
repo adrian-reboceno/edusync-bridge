@@ -36,13 +36,13 @@ final class IntegrationServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(
-            base_path('src/NeoLms/NeoSync/Infrastructure/Persistence/Migrations')
+            base_path('src/NeoLms/NeoSync/Infrastructure/Persistence/Migrations'),
         );
         $this->loadMigrationsFrom(
-            base_path('src/Scheduler/JobScheduler/Infrastructure/Persistence/Migrations')
+            base_path('src/Scheduler/JobScheduler/Infrastructure/Persistence/Migrations'),
         );
         $this->loadMigrationsFrom(
-            base_path('src/Academic/Student/Infrastructure/Persistence/Migrations')
+            base_path('src/Academic/Student/Infrastructure/Persistence/Migrations'),
         );
     }
 }

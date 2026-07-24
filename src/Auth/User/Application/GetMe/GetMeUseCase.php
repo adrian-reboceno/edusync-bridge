@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Auth\User\Application\GetMe;
 
 use Auth\User\Domain\Ports\UserRepositoryContract;
+use RuntimeException;
 use Shared\Domain\ValueObjects\Uuid;
 
 final readonly class GetMeUseCase
@@ -18,7 +19,7 @@ final readonly class GetMeUseCase
         $user = $this->users->findById(Uuid::fromString($query->userId));
 
         if ($user === null) {
-            throw new \RuntimeException('User not found.');
+            throw new RuntimeException('User not found.');
         }
 
         return new GetMeResult(

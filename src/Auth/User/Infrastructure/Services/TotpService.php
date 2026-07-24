@@ -17,7 +17,7 @@ final class TotpService implements TotpServiceContract
 
     public function __construct()
     {
-        $this->engine = new Google2FA();
+        $this->engine = new Google2FA;
         $this->engine->setKeyRegeneration(self::PERIOD_SECONDS);
         $this->engine->setOneTimePasswordLength(self::CODE_LENGTH);
     }

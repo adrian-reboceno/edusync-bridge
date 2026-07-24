@@ -26,7 +26,7 @@ final readonly class ChangePasswordUseCase
         $user = $this->users->findById($userId);
 
         if ($user === null || ! $user->verifyPassword(new Password($command->currentPassword))) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException;
         }
 
         $newPassword = new Password($command->newPassword);

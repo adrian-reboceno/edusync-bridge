@@ -45,7 +45,7 @@ final readonly class Password
         }
 
         if ($errors !== []) {
-            throw new InvalidArgumentException('Invalid password: '.implode(', ', $errors));
+            throw new InvalidArgumentException('Invalid password: ' . implode(', ', $errors));
         }
     }
 }
