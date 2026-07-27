@@ -29,54 +29,83 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
 
     public function getSummary(): UsersSummaryResult
     {
-        $userRow = DB::selectOne(<<<'SQL'
-            SELECT
-              COUNT(*) AS total,
-              COUNT(*) FILTER (WHERE first_login_at IS NOT NULL) AS activated,
-              COUNT(*) FILTER (WHERE first_login_at IS NULL)     AS never_logged_in,
-              COUNT(*) FILTER (WHERE archived = true)            AS archived,
-              MAX(organization_id)                                AS organization_id,
-              MAX(organization_name)                              AS organization_name,
-              MAX(synced_at)                                      AS last_synced_at,
-              COUNT(*) FILTER (WHERE roles @> '["Student"]')       AS students,
-              COUNT(*) FILTER (WHERE roles @> '["Teacher"]')       AS teachers,
-              COUNT(*) FILTER (WHERE roles @> '["Administrator"]') AS administrators,
-              COUNT(*) FILTER (
-                WHERE NOT (
-                  roles @> '["Student"]' OR roles @> '["Teacher"]' OR roles @> '["Administrator"]'
-                )
-              ) AS others
-            FROM neo_users
-        SQL);
+        // Query global (ya existe)
+        $totals = DB::table('neo_users')
+            ->selectRaw("
+                COUNT(*)                                                                               AS total,
+                COUNT(*) FILTER (WHERE first_login_at IS NOT NULL)                                    AS activated,
+                COUNT(*) FILTER (WHERE first_login_at IS NULL)                                        AS never_logged_in,
+                COUNT(*) FILTER (WHERE archived = true)                                               AS archived,
+                COUNT(*) FILTER (WHERE 'Student'       = ANY(ARRAY(SELECT jsonb_array_elements_text(roles)))) AS students,
+                COUNT(*) FILTER (WHERE 'Teacher'       = ANY(ARRAY(SELECT jsonb_array_elements_text(roles)))) AS teachers,
+                COUNT(*) FILTER (WHERE 'Administrator' = ANY(ARRAY(SELECT jsonb_array_elements_text(roles)))) AS administrators,
+                MAX(synced_at)                                                                         AS last_synced_at,
+                MAX(organization_name)                                                                 AS organization_name,
+                MAX(organization_id)                                                                   AS organization_id
+            ")
+            ->first();
 
-        $sessionRow = DB::selectOne(<<<'SQL'
-            SELECT
-              COUNT(*)                    AS total_sessions,
-              COUNT(DISTINCT neo_user_id) AS users_with_sessions
-            FROM neo_user_sessions
-        SQL);
+        // Query de sesiones (ya existe)
+        $sessions = DB::table('neo_user_sessions')
+            ->selectRaw('
+                COUNT(*)                    AS total_sessions,
+                COUNT(DISTINCT neo_user_id) AS users_with_sessions
+            ')
+            ->first();
 
-        $total = (int) $userRow->total;
-        $activated = (int) $userRow->activated;
-        $totalSessions = (int) $sessionRow->total_sessions;
-        $usersWithSessions = (int) $sessionRow->users_with_sessions;
+        // ← NUEVA query por organización
+        $orgs = DB::table('neo_users')
+            ->selectRaw("
+                organization_id,
+                organization_name,
+                COUNT(*)                                                                               AS total,
+                COUNT(*) FILTER (WHERE first_login_at IS NOT NULL)                                    AS activated,
+                COUNT(*) FILTER (WHERE first_login_at IS NULL)                                        AS never_logged_in,
+                COUNT(*) FILTER (WHERE 'Student'       = ANY(ARRAY(SELECT jsonb_array_elements_text(roles)))) AS students,
+                COUNT(*) FILTER (WHERE 'Teacher'       = ANY(ARRAY(SELECT jsonb_array_elements_text(roles)))) AS teachers,
+                COUNT(*) FILTER (WHERE 'Administrator' = ANY(ARRAY(SELECT jsonb_array_elements_text(roles)))) AS administrators
+            ")
+            ->groupBy('organization_id', 'organization_name')
+            ->orderByDesc('total')
+            ->get();
+
+        $total           = (int) $totals->total;
+        $activated       = (int) $totals->activated;
+        $totalSessions   = (int) ($sessions->total_sessions ?? 0);
+        $usersWithSess   = (int) ($sessions->users_with_sessions ?? 0);
 
         return new UsersSummaryResult(
-            total: $total,
-            activated: $activated,
-            neverLoggedIn: (int) $userRow->never_logged_in,
-            archived: (int) $userRow->archived,
-            activationRate: $total > 0 ? round($activated / $total * 100, 1) : 0.0,
-            students: (int) $userRow->students,
-            teachers: (int) $userRow->teachers,
-            administrators: (int) $userRow->administrators,
-            others: (int) $userRow->others,
-            organizationId: $userRow->organization_id !== null ? (int) $userRow->organization_id : null,
-            organizationName: $userRow->organization_name,
-            totalSessions: $totalSessions,
-            usersWithSessions: $usersWithSessions,
-            avgSessionsPerUser: $usersWithSessions > 0 ? round($totalSessions / $usersWithSessions, 1) : 0.0,
-            lastSyncedAt: $this->toIso($userRow->last_synced_at),
+            total:              $total,
+            activated:          $activated,
+            neverLoggedIn:      (int) $totals->never_logged_in,
+            archived:           (int) $totals->archived,
+            activationRate:     $total > 0 ? round($activated / $total * 100, 1) : 0.0,
+            students:           (int) $totals->students,
+            teachers:           (int) $totals->teachers,
+            administrators:     (int) $totals->administrators,
+            others:             $total - (int)$totals->students - (int)$totals->teachers - (int)$totals->administrators,
+            totalSessions:      $totalSessions,
+            usersWithSessions:  $usersWithSess,
+            avgSessionsPerUser: $usersWithSess > 0 ? round($totalSessions / $usersWithSess, 1) : 0.0,
+            lastSyncedAt:       $totals->last_synced_at,
+            organizations:      $orgs->map(fn($org) => [
+                'id'           => $org->organization_id,
+                'name'         => $org->organization_name,
+                'totals'       => [
+                    'total'            => (int) $org->total,
+                    'activated'        => (int) $org->activated,
+                    'never_logged_in'  => (int) $org->never_logged_in,
+                    'activation_rate'  => (int)$org->total > 0
+                        ? round((int)$org->activated / (int)$org->total * 100, 1)
+                        : 0.0,
+                ],
+                'by_role'      => [
+                    'students'       => (int) $org->students,
+                    'teachers'       => (int) $org->teachers,
+                    'administrators' => (int) $org->administrators,
+                    'others'         => (int)$org->total - (int)$org->students - (int)$org->teachers - (int)$org->administrators,
+                ],
+            ])->toArray(),
         );
     }
 

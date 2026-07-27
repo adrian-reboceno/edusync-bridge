@@ -40,7 +40,28 @@ final class UserAnalyticsController extends Controller
         $result = $this->summaryUseCase->execute();
 
         return response()->json([
-            'data' => $this->summaryToArray($result),
+            'data' => [
+                'totals' => [
+                    'total'           => $result->total,
+                    'activated'       => $result->activated,
+                    'never_logged_in' => $result->neverLoggedIn,
+                    'activation_rate' => $result->activationRate,
+                    'archived'        => $result->archived,
+                ],
+                'by_role' => [
+                    'students'       => $result->students,
+                    'teachers'       => $result->teachers,
+                    'administrators' => $result->administrators,
+                    'others'         => $result->others,
+                ],
+                'sessions' => [
+                    'total_sessions'       => $result->totalSessions,
+                    'users_with_sessions'  => $result->usersWithSessions,
+                    'avg_sessions_per_user'=> $result->avgSessionsPerUser,
+                ],
+                'organizations'  => $result->organizations,   // ← nuevo
+                'last_synced_at' => $result->lastSyncedAt,
+            ],
             'meta' => ['timestamp' => now()->toAtomString()],
         ]);
     }
