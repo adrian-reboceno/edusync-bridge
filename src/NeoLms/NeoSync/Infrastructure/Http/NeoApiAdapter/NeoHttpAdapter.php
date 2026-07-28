@@ -292,6 +292,25 @@ final class NeoHttpAdapter implements NeoLmsApiContract
     }
 
     // ─────────────────────────────────────────────────────────────
+    // LESSONS / SECTIONS / ASSIGNMENTS
+    // ─────────────────────────────────────────────────────────────
+
+    public function getClassLessons(int $classId): array
+    {
+        return $this->paginateAll("classes/{$classId}/lessons");
+    }
+
+    public function getClassSections(int $classId): array
+    {
+        return $this->paginateAll("classes/{$classId}/sections");
+    }
+
+    public function getClassAssignments(int $classId): array
+    {
+        return $this->paginateAll("classes/{$classId}/assignments");
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // BATCHES
     // ─────────────────────────────────────────────────────────────
 

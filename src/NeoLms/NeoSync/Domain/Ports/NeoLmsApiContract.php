@@ -123,6 +123,14 @@ interface NeoLmsApiContract
 
     public function removeTeacher(int $classId, int $userId): void;
 
+    // LESSONS / SECTIONS / ASSIGNMENTS
+
+    public function getClassLessons(int $classId): array;
+
+    public function getClassSections(int $classId): array;
+
+    public function getClassAssignments(int $classId): array;
+
     // BATCHES
 
     /**
