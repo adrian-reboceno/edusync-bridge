@@ -6,6 +6,7 @@ use Academic\Student\Infrastructure\Http\Controllers\UserAnalyticsController;
 use Auth\AuditLog\Infrastructure\Http\Controllers\AuditLogController;
 use Auth\Role\Infrastructure\Http\Controllers\RoleController;
 use Auth\User\Infrastructure\Http\Controllers\AuthController;
+use Curricular\StudyProgram\Infrastructure\Http\Controllers\ClassAnalyticsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function (): void {
@@ -43,5 +44,13 @@ Route::prefix('v1/analytics')->middleware('rbac2')->group(function (): void {
         ->whereNumber('neoId')
         ->middleware('rbac2:reports.sync.view');
     Route::get('users', [UserAnalyticsController::class, 'index'])
+        ->middleware('rbac2:reports.sync.view');
+
+    Route::get('classes/summary', [ClassAnalyticsController::class, 'summary'])
+        ->middleware('rbac2:reports.sync.view');
+    Route::get('classes/{neoId}', [ClassAnalyticsController::class, 'show'])
+        ->whereNumber('neoId')
+        ->middleware('rbac2:reports.sync.view');
+    Route::get('classes', [ClassAnalyticsController::class, 'index'])
         ->middleware('rbac2:reports.sync.view');
 });
