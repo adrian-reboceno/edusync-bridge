@@ -48,6 +48,12 @@ Route::prefix('v1/analytics')->middleware('rbac2')->group(function (): void {
 
     Route::get('classes/summary', [ClassAnalyticsController::class, 'summary'])
         ->middleware('rbac2:reports.sync.view');
+    Route::get('classes/{neoId}/lessons', [ClassAnalyticsController::class, 'lessons'])
+        ->whereNumber('neoId')
+        ->middleware('rbac2:reports.sync.view');
+    Route::get('classes/{neoId}/assignments', [ClassAnalyticsController::class, 'assignments'])
+        ->whereNumber('neoId')
+        ->middleware('rbac2:reports.sync.view');
     Route::get('classes/{neoId}', [ClassAnalyticsController::class, 'show'])
         ->whereNumber('neoId')
         ->middleware('rbac2:reports.sync.view');
