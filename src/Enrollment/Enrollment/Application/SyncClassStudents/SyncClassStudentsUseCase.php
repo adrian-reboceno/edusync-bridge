@@ -77,13 +77,14 @@ final readonly class SyncClassStudentsUseCase
     private function hasProgressChanged(?object $previous, NeoEnrollmentDTO $dto): bool
     {
         if ($previous === null) {
-            return $dto->percent !== null || $dto->grade !== null;
+            // Primer registro — solo insertar si tiene percent o grade con valor real
+            return $dto->percent !== null || ($dto->grade !== null && $dto->grade !== '-');
         }
 
-        return $previous->percent !== $dto->percent
-            || $previous->grade !== $dto->grade
-            || $previous->time_spent_seconds !== $dto->timeSpentSeconds
-            || $previous->last_visited_at !== $dto->lastVisitedAt;
+        return (float) ($previous->percent ?? 0) !== (float) ($dto->percent ?? 0)
+            || ($previous->grade ?? '') !== ($dto->grade ?? '')
+            || (int) ($previous->time_spent_seconds ?? 0) !== $dto->timeSpentSeconds
+            || ($previous->last_visited_at ?? '') !== ($dto->lastVisitedAt ?? '');
     }
 
     /**
