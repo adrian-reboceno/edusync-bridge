@@ -86,9 +86,11 @@ final readonly class NeoEnrollmentDTO
     {
         return md5(implode('|', [
             $this->neoEnrollmentId,
+            $this->started ? '1' : '0',
             $this->completed ? '1' : '0',
             $this->unenrolled ? '1' : '0',
             $this->deactivated ? '1' : '0',
+            $this->transferred ? '1' : '0',
             $this->percent ?? '',
             $this->grade ?? '',
             $this->lastVisitedAt ?? '',

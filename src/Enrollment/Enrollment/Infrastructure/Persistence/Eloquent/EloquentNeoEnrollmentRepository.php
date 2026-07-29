@@ -73,4 +73,73 @@ final class EloquentNeoEnrollmentRepository implements NeoEnrollmentRepositoryCo
             ->pluck('sis_id', 'neo_id')
             ->all();
     }
+
+    public function findCurrentState(int $neoUserId, int $neoClassId): ?object
+    {
+        $row = DB::table('neo_enrollments')
+            ->where('neo_user_id', $neoUserId)
+            ->where('neo_class_id', $neoClassId)
+            ->select([
+                'percent', 'grade', 'time_spent_seconds', 'last_visited_at',
+                'started', 'completed', 'unenrolled', 'deactivated',
+                'transferred', 'enrolled_at', 'enroll_type', 'enrolled_by_id',
+            ])
+            ->first();
+
+        if ($row === null) {
+            return null;
+        }
+
+        // Las columnas numeric() de Postgres llegan como string via PDO; se
+        // normalizan aquí para que el UseCase pueda compararlas de forma estricta.
+        $row->percent = $row->percent !== null ? (float) $row->percent : null;
+        $row->time_spent_seconds = $row->time_spent_seconds !== null ? (int) $row->time_spent_seconds : null;
+
+        return $row;
+    }
+
+    public function insertProgressHistory(NeoEnrollmentDTO $current, ?object $previous): void
+    {
+        DB::table('neo_enrollment_progress_history')->insert([
+            'neo_user_id' => $current->neoUserId,
+            'neo_class_id' => $current->neoClassId,
+            'sis_id' => $current->sisId,
+
+            'percent' => $current->percent,
+            'grade' => $current->grade,
+            'time_spent_seconds' => $current->timeSpentSeconds,
+            'last_visited_at' => $current->lastVisitedAt,
+
+            'percent_changed' => ($previous->percent ?? null) !== $current->percent,
+            'grade_changed' => ($previous->grade ?? null) !== $current->grade,
+            'time_spent_changed' => ($previous->time_spent_seconds ?? null) !== $current->timeSpentSeconds,
+            'last_visited_changed' => ($previous->last_visited_at ?? null) !== $current->lastVisitedAt,
+
+            'prev_percent' => $previous->percent ?? null,
+            'prev_grade' => $previous->grade ?? null,
+            'prev_time_spent_seconds' => $previous->time_spent_seconds ?? null,
+
+            'recorded_at' => now(),
+        ]);
+    }
+
+    public function insertStatusHistory(NeoEnrollmentDTO $current, string $event): void
+    {
+        DB::table('neo_enrollment_status_history')->insert([
+            'neo_enrollment_id' => $current->neoEnrollmentId,
+            'neo_user_id' => $current->neoUserId,
+            'neo_class_id' => $current->neoClassId,
+            'sis_id' => $current->sisId,
+            'event' => $event,
+            'enroll_type' => $current->enrollType,
+            'enrolled_by_id' => $current->enrolledById,
+            'enrolled_at' => $current->enrolledAt,
+            'unenrolled' => $current->unenrolled,
+            'deactivated' => $current->deactivated,
+            'transferred' => $current->transferred,
+            'completed' => $current->completed,
+            'started' => $current->started,
+            'recorded_at' => now(),
+        ]);
+    }
 }

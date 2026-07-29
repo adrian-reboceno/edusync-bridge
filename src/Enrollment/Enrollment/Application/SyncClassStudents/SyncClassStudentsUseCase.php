@@ -45,8 +45,19 @@ final readonly class SyncClassStudentsUseCase
                         continue;
                     }
 
+                    $previous = $this->enrollmentRepository->findCurrentState($dto->neoUserId, $dto->neoClassId);
+                    $isNew = $previous === null;
+
                     $this->enrollmentRepository->upsertEnrollment($dto);
                     $totalSynced++;
+
+                    if ($this->hasProgressChanged($previous, $dto)) {
+                        $this->enrollmentRepository->insertProgressHistory($dto, $previous);
+                    }
+
+                    foreach ($this->detectStatusEvents($previous, $dto, $isNew) as $event) {
+                        $this->enrollmentRepository->insertStatusHistory($dto, $event);
+                    }
                 }
             } catch (Throwable $e) {
                 $errors[] = [
@@ -61,5 +72,55 @@ final readonly class SyncClassStudentsUseCase
             skipped: $totalSkipped,
             errors: $errors,
         );
+    }
+
+    private function hasProgressChanged(?object $previous, NeoEnrollmentDTO $dto): bool
+    {
+        if ($previous === null) {
+            return $dto->percent !== null || $dto->grade !== null;
+        }
+
+        return $previous->percent !== $dto->percent
+            || $previous->grade !== $dto->grade
+            || $previous->time_spent_seconds !== $dto->timeSpentSeconds
+            || $previous->last_visited_at !== $dto->lastVisitedAt;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function detectStatusEvents(?object $previous, NeoEnrollmentDTO $dto, bool $isNew): array
+    {
+        if ($isNew) {
+            return ['enrolled'];
+        }
+
+        $events = [];
+
+        if (! $previous->started && $dto->started) {
+            $events[] = 'started';
+        }
+
+        if (! $previous->completed && $dto->completed) {
+            $events[] = 'completed';
+        }
+
+        if (! $previous->unenrolled && $dto->unenrolled) {
+            $events[] = 'unenrolled';
+        }
+
+        if (! $previous->deactivated && $dto->deactivated) {
+            $events[] = 'deactivated';
+        }
+
+        if (! $previous->transferred && $dto->transferred) {
+            $events[] = 'transferred';
+        }
+
+        if ($previous->deactivated && ! $dto->deactivated) {
+            $events[] = 'reactivated';
+        }
+
+        return $events;
     }
 }
