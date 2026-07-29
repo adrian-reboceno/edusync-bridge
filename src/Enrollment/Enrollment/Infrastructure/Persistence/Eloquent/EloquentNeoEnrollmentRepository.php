@@ -110,14 +110,13 @@ final class EloquentNeoEnrollmentRepository implements NeoEnrollmentRepositoryCo
             'time_spent_seconds' => $current->timeSpentSeconds,
             'last_visited_at' => $current->lastVisitedAt,
 
-            'percent_changed' => ($previous->percent ?? null) !== $current->percent,
-            'grade_changed' => ($previous->grade ?? null) !== $current->grade,
-            'time_spent_changed' => ($previous->time_spent_seconds ?? null) !== $current->timeSpentSeconds,
-            'last_visited_changed' => ($previous->last_visited_at ?? null) !== $current->lastVisitedAt,
-
-            'prev_percent' => $previous->percent ?? null,
-            'prev_grade' => $previous->grade ?? null,
-            'prev_time_spent_seconds' => $previous->time_spent_seconds ?? null,
+            'percent_changed'         => ($previous?->percent ?? null) !== $current->percent,
+            'grade_changed'           => ($previous?->grade ?? null) !== ($current->grade === '-' ? null : $current->grade),
+            'time_spent_changed'      => (int) ($previous?->time_spent_seconds ?? 0) !== $current->timeSpentSeconds,
+            'last_visited_changed'    => ($previous?->last_visited_at ?? null) !== $current->lastVisitedAt,
+            'prev_percent'            => $previous?->percent ?? null,
+            'prev_grade'              => $previous?->grade ?? null,
+            'prev_time_spent_seconds' => $previous !== null ? (int) $previous->time_spent_seconds : null,
 
             'recorded_at' => now(),
         ]);

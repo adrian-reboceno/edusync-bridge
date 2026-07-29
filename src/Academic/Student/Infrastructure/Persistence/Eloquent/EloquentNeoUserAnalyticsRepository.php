@@ -417,24 +417,34 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
             if (! isset($grouped[$classId])) {
                 $grouped[$classId] = [
                     'neo_class_id' => $classId,
-                    'class_name' => $row->class_name,
-                    'history' => [],
+                    'class_name'   => $row->class_name,
+                    'history'      => [],
                 ];
             }
 
             $grouped[$classId]['history'][] = [
-                'recorded_at' => $this->toIso($row->recorded_at),
-                'percent' => $row->percent !== null ? (float) $row->percent : null,
-                'grade' => $row->grade,
-                'prev_percent' => $row->prev_percent !== null ? (float) $row->prev_percent : null,
-                'prev_grade' => $row->prev_grade,
-                'delta_percent' => $row->delta_percent !== null ? (float) $row->delta_percent : null,
+                'recorded_at'        => $this->toIso($row->recorded_at),
+                'percent'            => $row->percent !== null ? (float) $row->percent : null,
+                'grade'              => $row->grade,
+                'prev_percent'       => $row->prev_percent !== null ? (float) $row->prev_percent : null,
+                'prev_grade'         => $row->prev_grade,
+                'delta_percent'      => $row->delta_percent !== null ? (float) $row->delta_percent : null,
                 'time_spent_seconds' => $row->time_spent_seconds !== null ? (int) $row->time_spent_seconds : null,
-                'last_visited_at' => $this->toIso($row->last_visited_at),
+                'last_visited_at'    => $this->toIso($row->last_visited_at),
             ];
         }
 
-        return array_values($grouped);
+        $result = [];
+        foreach ($grouped as $classData) {
+            $result[] = [
+                'neo_class_id'       => $classData['neo_class_id'],
+                'class_name'         => $classData['class_name'],
+                'history'            => $classData['history'],
+                'total_daily_streak' => $this->calculateStreak($classData['history']),
+            ];
+        }
+
+        return $result;
     }
 
     private function applyUserFilters(Builder $query, ?string $role, ?bool $activated, ?string $search): void
@@ -496,5 +506,61 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
     private function toIso(?string $value): ?string
     {
         return $value !== null ? Carbon::parse($value)->toIso8601String() : null;
+    }
+
+    private function calculateStreak(array $history): int
+    {
+        if (empty($history)) {
+            return 0;
+        }
+
+        // Filtrar registros con progreso real Y con last_visited_at
+        $progressDays = [];
+        foreach ($history as $record) {
+            $hasRealProgress =
+                ($record['delta_percent'] !== null && $record['delta_percent'] > 0) ||
+                ($record['grade'] !== null && $record['grade'] !== ($record['prev_grade'] ?? null));
+
+            // Usar last_visited_at — cuándo el alumno realmente visitó la clase
+            if ($hasRealProgress && $record['last_visited_at'] !== null) {
+                $day = substr($record['last_visited_at'], 0, 10); // "2026-07-28"
+                $progressDays[$day] = true;
+            }
+        }
+
+        if (empty($progressDays)) {
+            return 0;
+        }
+
+        $days = array_keys($progressDays);
+        sort($days);
+
+        // Verificar si el último día está dentro de las últimas 24h
+        $lastDay  = end($days);
+        $lastDate = new \DateTimeImmutable($lastDay . ' 23:59:59', new \DateTimeZone('UTC'));
+        $now      = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $hoursSinceLast = ($now->getTimestamp() - $lastDate->getTimestamp()) / 3600;
+
+        if ($hoursSinceLast > 24) {
+            return 0;
+        }
+
+        // Contar días consecutivos hacia atrás
+        $streak  = 1;
+        $current = new \DateTimeImmutable($lastDay);
+
+        for ($i = count($days) - 2; $i >= 0; $i--) {
+            $prev     = new \DateTimeImmutable($days[$i]);
+            $diffDays = (int) $current->diff($prev)->days;
+
+            if ($diffDays === 1) {
+                $streak++;
+                $current = $prev;
+            } else {
+                break;
+            }
+        }
+
+        return $streak;
     }
 }
