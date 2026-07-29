@@ -13,6 +13,7 @@ use Academic\Student\Application\GetAnalytics\GetUsersSummaryUseCase;
 use Academic\Student\Application\GetAnalytics\UsersSummaryResult;
 use Academic\Student\Infrastructure\Http\Requests\GetDailyAccessRequest;
 use Academic\Student\Infrastructure\Http\Requests\GetUsersListRequest;
+use Grades\Grade\Application\GetAnalytics\GetUserGradesUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -27,6 +28,7 @@ final class UserAnalyticsController extends Controller
         private readonly GetUsersListUseCase $listUseCase,
         private readonly GetDailyAccessUseCase $dailyAccessUseCase,
         private readonly GetUserDetailUseCase $detailUseCase,
+        private readonly GetUserGradesUseCase $gradesUseCase,
     ) {}
 
     /**
@@ -163,6 +165,37 @@ final class UserAnalyticsController extends Controller
                 'sessions_summary' => $result->sessionsSummary,
                 'daily_activity' => $result->dailyActivity,
                 'sessions' => $result->sessions,
+            ],
+            'meta' => ['timestamp' => now()->toAtomString()],
+        ]);
+    }
+
+    /**
+     * Calificaciones de un usuario
+     *
+     * Retorna el perfil resumido del usuario, un resumen de desempeño
+     * (promedios, assignments completados) y el detalle de sus calificaciones
+     * en todas sus clases. Responde 404 si el usuario no existe.
+     */
+    public function grades(int $neoId): JsonResponse
+    {
+        $result = $this->gradesUseCase->execute($neoId);
+
+        if ($result === null) {
+            return response()->json([
+                'errors' => [[
+                    'code' => 'NOT_FOUND',
+                    'message' => "User with neo_id {$neoId} not found.",
+                    'field' => null,
+                ]],
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'user' => $result->user,
+                'summary' => $result->summary,
+                'grades' => $result->grades,
             ],
             'meta' => ['timestamp' => now()->toAtomString()],
         ]);

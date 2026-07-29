@@ -22,8 +22,12 @@ use Enrollment\Enrollment\Domain\Ports\NeoEnrollmentRepositoryContract;
 use Enrollment\Enrollment\Infrastructure\Persistence\Eloquent\EloquentNeoClassTeacherRepository;
 use Enrollment\Enrollment\Infrastructure\Persistence\Eloquent\EloquentNeoEnrollmentRepository;
 use Grades\Grade\Domain\Ports\NeoAssignmentAnalyticsRepositoryContract;
+use Grades\Grade\Domain\Ports\NeoAssignmentGradeAnalyticsRepositoryContract;
+use Grades\Grade\Domain\Ports\NeoAssignmentGradeRepositoryContract;
 use Grades\Grade\Domain\Ports\NeoAssignmentRepositoryContract;
 use Grades\Grade\Infrastructure\Persistence\Eloquent\EloquentNeoAssignmentAnalyticsRepository;
+use Grades\Grade\Infrastructure\Persistence\Eloquent\EloquentNeoAssignmentGradeAnalyticsRepository;
+use Grades\Grade\Infrastructure\Persistence\Eloquent\EloquentNeoAssignmentGradeRepository;
 use Grades\Grade\Infrastructure\Persistence\Eloquent\EloquentNeoAssignmentRepository;
 use Illuminate\Support\ServiceProvider;
 use NeoLms\NeoSync\Domain\Ports\NeoLmsApiContract;
@@ -57,6 +61,8 @@ final class IntegrationServiceProvider extends ServiceProvider
         $this->app->bind(NeoLessonAnalyticsRepositoryContract::class, EloquentNeoLessonAnalyticsRepository::class);
         $this->app->bind(NeoAssignmentRepositoryContract::class, EloquentNeoAssignmentRepository::class);
         $this->app->bind(NeoAssignmentAnalyticsRepositoryContract::class, EloquentNeoAssignmentAnalyticsRepository::class);
+        $this->app->bind(NeoAssignmentGradeRepositoryContract::class, EloquentNeoAssignmentGradeRepository::class);
+        $this->app->bind(NeoAssignmentGradeAnalyticsRepositoryContract::class, EloquentNeoAssignmentGradeAnalyticsRepository::class);
     }
 
     public function boot(): void
