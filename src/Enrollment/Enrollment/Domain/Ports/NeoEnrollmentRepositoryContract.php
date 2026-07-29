@@ -26,4 +26,23 @@ interface NeoEnrollmentRepositoryContract
      * @return array<int, string|null>
      */
     public function getSisIdMap(): array;
+
+    /**
+     * Retorna el estado actual de una inscripción en neo_enrollments ANTES del upsert.
+     * Usado para comparar y detectar cambios de progreso y de estado. Null si es la
+     * primera vez que se ve esta inscripción.
+     */
+    public function findCurrentState(int $neoUserId, int $neoClassId): ?object;
+
+    /**
+     * Inserta un registro de historial de progreso (append-only).
+     * Solo se llama cuando se detectó un cambio de progreso.
+     */
+    public function insertProgressHistory(NeoEnrollmentDTO $current, ?object $previous): void;
+
+    /**
+     * Inserta un registro de historial de estado (append-only).
+     * Un registro por evento detectado.
+     */
+    public function insertStatusHistory(NeoEnrollmentDTO $current, string $event): void;
 }
