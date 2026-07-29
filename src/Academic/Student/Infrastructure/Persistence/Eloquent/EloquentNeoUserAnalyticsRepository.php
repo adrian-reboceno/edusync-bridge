@@ -339,6 +339,104 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
         }, $rows);
     }
 
+    public function getUserClasses(int $neoId): array
+    {
+        $rows = DB::select(<<<'SQL'
+            SELECT
+                e.neo_class_id,
+                c.name                                  AS class_name,
+                c.organization_name,
+                c.start_at,
+                c.finish_at,
+                e.enrolled_at,
+                e.enroll_type,
+                e.started,
+                e.started_at,
+                e.completed,
+                e.completed_at,
+                e.unenrolled,
+                e.last_visited_at,
+                e.time_spent_seconds,
+                ROUND(e.time_spent_seconds / 3600.0, 2)  AS time_spent_hours,
+                e.percent,
+                e.grade
+            FROM neo_enrollments e
+            JOIN neo_classes c ON c.neo_id = e.neo_class_id
+            WHERE e.neo_user_id = ?
+              AND e.unenrolled = false
+            ORDER BY e.last_visited_at DESC NULLS LAST, c.name ASC
+        SQL, [$neoId]);
+
+        return array_map(function (object $row): array {
+            return [
+                'neo_class_id' => (int) $row->neo_class_id,
+                'class_name' => $row->class_name,
+                'organization_name' => $row->organization_name,
+                'start_at' => $row->start_at,
+                'finish_at' => $row->finish_at,
+                'enrolled_at' => $this->toIso($row->enrolled_at),
+                'enroll_type' => $row->enroll_type,
+                'started' => (bool) $row->started,
+                'started_at' => $this->toIso($row->started_at),
+                'completed' => (bool) $row->completed,
+                'completed_at' => $this->toIso($row->completed_at),
+                'unenrolled' => (bool) $row->unenrolled,
+                'last_visited_at' => $this->toIso($row->last_visited_at),
+                'time_spent_seconds' => (int) ($row->time_spent_seconds ?? 0),
+                'time_spent_hours' => (float) ($row->time_spent_hours ?? 0),
+                'percent' => $row->percent !== null ? (float) $row->percent : null,
+                'grade' => $row->grade,
+            ];
+        }, $rows);
+    }
+
+    public function getUserDailyStreak(int $neoId): array
+    {
+        $rows = DB::select(<<<'SQL'
+            SELECT
+                h.neo_class_id,
+                c.name                                                       AS class_name,
+                h.recorded_at,
+                h.percent,
+                h.grade,
+                h.prev_percent,
+                h.prev_grade,
+                ROUND((h.percent - COALESCE(h.prev_percent, 0))::numeric, 2) AS delta_percent,
+                h.time_spent_seconds,
+                h.last_visited_at
+            FROM neo_enrollment_progress_history h
+            JOIN neo_classes c ON c.neo_id = h.neo_class_id
+            WHERE h.neo_user_id = ?
+            ORDER BY h.neo_class_id, h.recorded_at ASC
+        SQL, [$neoId]);
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $classId = (int) $row->neo_class_id;
+
+            if (! isset($grouped[$classId])) {
+                $grouped[$classId] = [
+                    'neo_class_id' => $classId,
+                    'class_name' => $row->class_name,
+                    'history' => [],
+                ];
+            }
+
+            $grouped[$classId]['history'][] = [
+                'recorded_at' => $this->toIso($row->recorded_at),
+                'percent' => $row->percent !== null ? (float) $row->percent : null,
+                'grade' => $row->grade,
+                'prev_percent' => $row->prev_percent !== null ? (float) $row->prev_percent : null,
+                'prev_grade' => $row->prev_grade,
+                'delta_percent' => $row->delta_percent !== null ? (float) $row->delta_percent : null,
+                'time_spent_seconds' => $row->time_spent_seconds !== null ? (int) $row->time_spent_seconds : null,
+                'last_visited_at' => $this->toIso($row->last_visited_at),
+            ];
+        }
+
+        return array_values($grouped);
+    }
+
     private function applyUserFilters(Builder $query, ?string $role, ?bool $activated, ?string $search): void
     {
         if ($role !== null) {

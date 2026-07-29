@@ -53,4 +53,20 @@ interface NeoUserAnalyticsRepositoryContract
      * @return array[]
      */
     public function getUserSessions(int $neoId): array;
+
+    /**
+     * Clases en las que está inscrito el usuario con su progreso actual.
+     * Solo clases activas (unenrolled = false).
+     *
+     * @return array[]
+     */
+    public function getUserClasses(int $neoId): array;
+
+    /**
+     * Historial de cambios de progreso agrupado por clase.
+     * Fuente: neo_enrollment_progress_history JOIN neo_classes.
+     *
+     * @return array[] Agrupado por neo_class_id con array 'history' interno
+     */
+    public function getUserDailyStreak(int $neoId): array;
 }
