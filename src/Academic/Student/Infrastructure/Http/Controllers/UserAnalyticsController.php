@@ -165,6 +165,8 @@ final class UserAnalyticsController extends Controller
                 'sessions_summary' => $result->sessionsSummary,
                 'daily_activity' => $result->dailyActivity,
                 'sessions' => $result->sessions,
+                'classes' => $result->classes,
+                'daily_streak' => $result->dailyStreak,
             ],
             'meta' => ['timestamp' => now()->toAtomString()],
         ]);
