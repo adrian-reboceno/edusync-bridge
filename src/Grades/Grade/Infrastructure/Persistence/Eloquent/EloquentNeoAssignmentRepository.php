@@ -48,4 +48,30 @@ final class EloquentNeoAssignmentRepository implements NeoAssignmentRepositoryCo
 
         return $storedChecksum !== $checksum;
     }
+
+    public function getAllAssignments(): array
+    {
+        return DB::table('neo_assignments')
+            ->select('neo_assignment_id', 'neo_class_id')
+            ->orderBy('neo_class_id')
+            ->get()
+            ->map(static fn (object $row): array => [
+                'neo_assignment_id' => (int) $row->neo_assignment_id,
+                'neo_class_id' => (int) $row->neo_class_id,
+            ])
+            ->all();
+    }
+
+    public function getAssignmentsByClass(int $classId): array
+    {
+        return DB::table('neo_assignments')
+            ->select('neo_assignment_id', 'neo_class_id')
+            ->where('neo_class_id', $classId)
+            ->get()
+            ->map(static fn (object $row): array => [
+                'neo_assignment_id' => (int) $row->neo_assignment_id,
+                'neo_class_id' => (int) $row->neo_class_id,
+            ])
+            ->all();
+    }
 }

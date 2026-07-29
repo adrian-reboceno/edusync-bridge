@@ -40,6 +40,9 @@ Route::prefix('v1/analytics')->middleware('rbac2')->group(function (): void {
         ->middleware('rbac2:reports.sync.view');
     Route::get('users/daily-access', [UserAnalyticsController::class, 'dailyAccess'])
         ->middleware('rbac2:reports.sync.view');
+    Route::get('users/{neoId}/grades', [UserAnalyticsController::class, 'grades'])
+        ->whereNumber('neoId')
+        ->middleware('rbac2:reports.sync.view');
     Route::get('users/{neoId}', [UserAnalyticsController::class, 'show'])
         ->whereNumber('neoId')
         ->middleware('rbac2:reports.sync.view');
@@ -50,6 +53,9 @@ Route::prefix('v1/analytics')->middleware('rbac2')->group(function (): void {
         ->middleware('rbac2:reports.sync.view');
     Route::get('classes/{neoId}/lessons', [ClassAnalyticsController::class, 'lessons'])
         ->whereNumber('neoId')
+        ->middleware('rbac2:reports.sync.view');
+    Route::get('classes/{neoId}/assignments/{assignmentId}/grades', [ClassAnalyticsController::class, 'assignmentGrades'])
+        ->whereNumber(['neoId', 'assignmentId'])
         ->middleware('rbac2:reports.sync.view');
     Route::get('classes/{neoId}/assignments', [ClassAnalyticsController::class, 'assignments'])
         ->whereNumber('neoId')
