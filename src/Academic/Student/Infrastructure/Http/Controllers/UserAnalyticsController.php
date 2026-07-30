@@ -44,24 +44,24 @@ final class UserAnalyticsController extends Controller
         return response()->json([
             'data' => [
                 'totals' => [
-                    'total'           => $result->total,
-                    'activated'       => $result->activated,
+                    'total' => $result->total,
+                    'activated' => $result->activated,
                     'never_logged_in' => $result->neverLoggedIn,
                     'activation_rate' => $result->activationRate,
-                    'archived'        => $result->archived,
+                    'archived' => $result->archived,
                 ],
                 'by_role' => [
-                    'students'       => $result->students,
-                    'teachers'       => $result->teachers,
+                    'students' => $result->students,
+                    'teachers' => $result->teachers,
                     'administrators' => $result->administrators,
-                    'others'         => $result->others,
+                    'others' => $result->others,
                 ],
                 'sessions' => [
-                    'total_sessions'       => $result->totalSessions,
-                    'users_with_sessions'  => $result->usersWithSessions,
-                    'avg_sessions_per_user'=> $result->avgSessionsPerUser,
+                    'total_sessions' => $result->totalSessions,
+                    'users_with_sessions' => $result->usersWithSessions,
+                    'avg_sessions_per_user' => $result->avgSessionsPerUser,
                 ],
-                'organizations'  => $result->organizations,   // ← nuevo
+                'organizations' => $result->organizations,   // ← nuevo
                 'last_synced_at' => $result->lastSyncedAt,
             ],
             'meta' => ['timestamp' => now()->toAtomString()],
@@ -159,13 +159,19 @@ final class UserAnalyticsController extends Controller
             ], 404);
         }
 
+        $classes = array_map(function (array $class) use ($result): array {
+            $class['result'] = $result->resultsByClass[$class['neo_class_id']] ?? [];
+
+            return $class;
+        }, $result->classes);
+
         return response()->json([
             'data' => [
                 'user' => $result->user,
                 'sessions_summary' => $result->sessionsSummary,
                 'daily_activity' => $result->dailyActivity,
                 'sessions' => $result->sessions,
-                'classes' => $result->classes,
+                'classes' => $classes,
                 'daily_streak' => $result->dailyStreak,
             ],
             'meta' => ['timestamp' => now()->toAtomString()],

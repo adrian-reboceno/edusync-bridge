@@ -11,6 +11,7 @@ use Curricular\StudyProgram\Application\GetAnalytics\GetClassesListUseCase;
 use Curricular\StudyProgram\Application\GetAnalytics\GetClassesSummaryUseCase;
 use Curricular\StudyProgram\Infrastructure\Http\Requests\GetClassesListRequest;
 use Grades\Grade\Application\GetAnalytics\GetAssignmentGradesUseCase;
+use Grades\Grade\Application\GetAnalytics\GetAssignmentResultsUseCase;
 use Grades\Grade\Application\GetAnalytics\GetClassAssignmentsUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
@@ -27,6 +28,7 @@ final class ClassAnalyticsController extends Controller
         private readonly GetClassLessonsUseCase $lessonsUseCase,
         private readonly GetClassAssignmentsUseCase $assignmentsUseCase,
         private readonly GetAssignmentGradesUseCase $assignmentGradesUseCase,
+        private readonly GetAssignmentResultsUseCase $assignmentResultsUseCase,
     ) {}
 
     /**
@@ -203,6 +205,37 @@ final class ClassAnalyticsController extends Controller
                 'assignment' => $result->assignment,
                 'stats' => $result->stats,
                 'grades' => $result->grades,
+            ],
+            'meta' => ['timestamp' => now()->toAtomString()],
+        ]);
+    }
+
+    /**
+     * Resultados de un assignment
+     *
+     * Retorna las respuestas individuales de los alumnos para un assignment
+     * (una por pregunta en quizzes, una por entrega en texto libre).
+     * Responde 404 si la clase o el assignment no existen.
+     */
+    public function assignmentResults(int $neoId, int $assignmentId): JsonResponse
+    {
+        $result = $this->assignmentResultsUseCase->execute($neoId, $assignmentId);
+
+        if ($result === null) {
+            return response()->json([
+                'errors' => [[
+                    'code' => 'NOT_FOUND',
+                    'message' => "Assignment {$assignmentId} not found in class {$neoId}.",
+                    'field' => null,
+                ]],
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'assignment' => $result->assignment,
+                'total_results' => $result->totalResults,
+                'results' => $result->results,
             ],
             'meta' => ['timestamp' => now()->toAtomString()],
         ]);

@@ -134,6 +134,9 @@ interface NeoLmsApiContract
     /** GET /classes/{id}/assignments/{assignment_id}/grades — calificaciones de todos los alumnos. */
     public function getAssignmentGrades(int $classId, int $assignmentId): array;
 
+    /** GET /classes/{id}/assignments/{assignment_id}/results — respuestas individuales por alumno/pregunta. */
+    public function getAssignmentResults(int $classId, int $assignmentId): array;
+
     // BATCHES
 
     /**

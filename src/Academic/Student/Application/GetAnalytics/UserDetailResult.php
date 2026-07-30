@@ -13,5 +13,6 @@ final readonly class UserDetailResult
         public array $sessions,
         public array $classes,
         public array $dailyStreak,
+        public array $resultsByClass,
     ) {}
 }

@@ -69,4 +69,11 @@ interface NeoUserAnalyticsRepositoryContract
      * @return array[] Agrupado por neo_class_id con array 'history' interno
      */
     public function getUserDailyStreak(int $neoId): array;
+
+    /**
+     * Resultados de assignments del usuario agrupados por clase.
+     *
+     * @return array<int, array[]> Indexado por neo_class_id
+     */
+    public function getUserResultsByClass(int $neoId): array;
 }
