@@ -9,6 +9,7 @@ use Academic\Student\Domain\Ports\NeoUserAnalyticsRepositoryContract;
 use DateInterval;
 use DatePeriod;
 use DateTimeImmutable;
+use DateTimeZone;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -69,41 +70,41 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
             ->orderByDesc('total')
             ->get();
 
-        $total           = (int) $totals->total;
-        $activated       = (int) $totals->activated;
-        $totalSessions   = (int) ($sessions->total_sessions ?? 0);
-        $usersWithSess   = (int) ($sessions->users_with_sessions ?? 0);
+        $total = (int) $totals->total;
+        $activated = (int) $totals->activated;
+        $totalSessions = (int) ($sessions->total_sessions ?? 0);
+        $usersWithSess = (int) ($sessions->users_with_sessions ?? 0);
 
         return new UsersSummaryResult(
-            total:              $total,
-            activated:          $activated,
-            neverLoggedIn:      (int) $totals->never_logged_in,
-            archived:           (int) $totals->archived,
-            activationRate:     $total > 0 ? round($activated / $total * 100, 1) : 0.0,
-            students:           (int) $totals->students,
-            teachers:           (int) $totals->teachers,
-            administrators:     (int) $totals->administrators,
-            others:             $total - (int)$totals->students - (int)$totals->teachers - (int)$totals->administrators,
-            totalSessions:      $totalSessions,
-            usersWithSessions:  $usersWithSess,
+            total: $total,
+            activated: $activated,
+            neverLoggedIn: (int) $totals->never_logged_in,
+            archived: (int) $totals->archived,
+            activationRate: $total > 0 ? round($activated / $total * 100, 1) : 0.0,
+            students: (int) $totals->students,
+            teachers: (int) $totals->teachers,
+            administrators: (int) $totals->administrators,
+            others: $total - (int) $totals->students - (int) $totals->teachers - (int) $totals->administrators,
+            totalSessions: $totalSessions,
+            usersWithSessions: $usersWithSess,
             avgSessionsPerUser: $usersWithSess > 0 ? round($totalSessions / $usersWithSess, 1) : 0.0,
-            lastSyncedAt:       $totals->last_synced_at,
-            organizations:      $orgs->map(fn($org) => [
-                'id'           => $org->organization_id,
-                'name'         => $org->organization_name,
-                'totals'       => [
-                    'total'            => (int) $org->total,
-                    'activated'        => (int) $org->activated,
-                    'never_logged_in'  => (int) $org->never_logged_in,
-                    'activation_rate'  => (int)$org->total > 0
-                        ? round((int)$org->activated / (int)$org->total * 100, 1)
+            lastSyncedAt: $totals->last_synced_at,
+            organizations: $orgs->map(fn ($org) => [
+                'id' => $org->organization_id,
+                'name' => $org->organization_name,
+                'totals' => [
+                    'total' => (int) $org->total,
+                    'activated' => (int) $org->activated,
+                    'never_logged_in' => (int) $org->never_logged_in,
+                    'activation_rate' => (int) $org->total > 0
+                        ? round((int) $org->activated / (int) $org->total * 100, 1)
                         : 0.0,
                 ],
-                'by_role'      => [
-                    'students'       => (int) $org->students,
-                    'teachers'       => (int) $org->teachers,
+                'by_role' => [
+                    'students' => (int) $org->students,
+                    'teachers' => (int) $org->teachers,
                     'administrators' => (int) $org->administrators,
-                    'others'         => (int)$org->total - (int)$org->students - (int)$org->teachers - (int)$org->administrators,
+                    'others' => (int) $org->total - (int) $org->students - (int) $org->teachers - (int) $org->administrators,
                 ],
             ])->toArray(),
         );
@@ -417,34 +418,80 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
             if (! isset($grouped[$classId])) {
                 $grouped[$classId] = [
                     'neo_class_id' => $classId,
-                    'class_name'   => $row->class_name,
-                    'history'      => [],
+                    'class_name' => $row->class_name,
+                    'history' => [],
                 ];
             }
 
             $grouped[$classId]['history'][] = [
-                'recorded_at'        => $this->toIso($row->recorded_at),
-                'percent'            => $row->percent !== null ? (float) $row->percent : null,
-                'grade'              => $row->grade,
-                'prev_percent'       => $row->prev_percent !== null ? (float) $row->prev_percent : null,
-                'prev_grade'         => $row->prev_grade,
-                'delta_percent'      => $row->delta_percent !== null ? (float) $row->delta_percent : null,
+                'recorded_at' => $this->toIso($row->recorded_at),
+                'percent' => $row->percent !== null ? (float) $row->percent : null,
+                'grade' => $row->grade,
+                'prev_percent' => $row->prev_percent !== null ? (float) $row->prev_percent : null,
+                'prev_grade' => $row->prev_grade,
+                'delta_percent' => $row->delta_percent !== null ? (float) $row->delta_percent : null,
                 'time_spent_seconds' => $row->time_spent_seconds !== null ? (int) $row->time_spent_seconds : null,
-                'last_visited_at'    => $this->toIso($row->last_visited_at),
+                'last_visited_at' => $this->toIso($row->last_visited_at),
             ];
         }
 
         $result = [];
         foreach ($grouped as $classData) {
             $result[] = [
-                'neo_class_id'       => $classData['neo_class_id'],
-                'class_name'         => $classData['class_name'],
-                'history'            => $classData['history'],
+                'neo_class_id' => $classData['neo_class_id'],
+                'class_name' => $classData['class_name'],
+                'history' => $classData['history'],
                 'total_daily_streak' => $this->calculateStreak($classData['history']),
             ];
         }
 
         return $result;
+    }
+
+    public function getUserResultsByClass(int $neoId): array
+    {
+        $rows = DB::select(<<<'SQL'
+            SELECT
+                r.neo_class_id,
+                r.neo_result_id,
+                r.neo_grade_id,
+                r.neo_assignment_id,
+                a.neo_lesson_id,
+                a.lesson_name,
+                a.name AS assignment_name,
+                a.type AS assignment_type,
+                r.question_id,
+                r.response,
+                r.points,
+                r.score,
+                r.grade
+            FROM neo_assignment_results r
+            JOIN neo_assignments a ON a.neo_assignment_id = r.neo_assignment_id
+            WHERE r.neo_user_id = ?
+            ORDER BY r.neo_class_id, r.neo_assignment_id, r.question_id NULLS LAST
+        SQL, [$neoId]);
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $classId = (int) $row->neo_class_id;
+
+            $grouped[$classId][] = [
+                'neo_result_id' => (int) $row->neo_result_id,
+                'neo_grade_id' => (int) $row->neo_grade_id,
+                'neo_assignment_id' => (int) $row->neo_assignment_id,
+                'neo_lesson_id' => $row->neo_lesson_id !== null ? (int) $row->neo_lesson_id : null,
+                'lesson_name' => $row->lesson_name,
+                'assignment_name' => $row->assignment_name,
+                'assignment_type' => $row->assignment_type,
+                'question_id' => $row->question_id !== null ? (int) $row->question_id : null,
+                'response' => $row->response,
+                'points' => $row->points !== null ? (float) $row->points : null,
+                'score' => $row->score !== null ? (float) $row->score : null,
+                'grade' => $row->grade,
+            ];
+        }
+
+        return $grouped;
     }
 
     private function applyUserFilters(Builder $query, ?string $role, ?bool $activated, ?string $search): void
@@ -536,9 +583,9 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
         sort($days);
 
         // Verificar si el último día está dentro de las últimas 24h
-        $lastDay  = end($days);
-        $lastDate = new \DateTimeImmutable($lastDay . ' 23:59:59', new \DateTimeZone('UTC'));
-        $now      = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $lastDay = end($days);
+        $lastDate = new DateTimeImmutable($lastDay . ' 23:59:59', new DateTimeZone('UTC'));
+        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $hoursSinceLast = ($now->getTimestamp() - $lastDate->getTimestamp()) / 3600;
 
         if ($hoursSinceLast > 24) {
@@ -546,11 +593,11 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
         }
 
         // Contar días consecutivos hacia atrás
-        $streak  = 1;
-        $current = new \DateTimeImmutable($lastDay);
+        $streak = 1;
+        $current = new DateTimeImmutable($lastDay);
 
         for ($i = count($days) - 2; $i >= 0; $i--) {
-            $prev     = new \DateTimeImmutable($days[$i]);
+            $prev = new DateTimeImmutable($days[$i]);
             $diffDays = (int) $current->diff($prev)->days;
 
             if ($diffDays === 1) {

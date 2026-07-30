@@ -315,6 +315,11 @@ final class NeoHttpAdapter implements NeoLmsApiContract
         return $this->paginateAll("classes/{$classId}/assignments/{$assignmentId}/grades");
     }
 
+    public function getAssignmentResults(int $classId, int $assignmentId): array
+    {
+        return $this->paginateAll("classes/{$classId}/assignments/{$assignmentId}/results");
+    }
+
     // ─────────────────────────────────────────────────────────────
     // BATCHES
     // ─────────────────────────────────────────────────────────────

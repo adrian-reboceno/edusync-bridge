@@ -27,6 +27,7 @@ final readonly class GetUserDetailUseCase
             sessions: $this->repository->getUserSessions($neoId),
             classes: $this->repository->getUserClasses($neoId),
             dailyStreak: $this->repository->getUserDailyStreak($neoId),
+            resultsByClass: $this->repository->getUserResultsByClass($neoId),
         );
     }
 }

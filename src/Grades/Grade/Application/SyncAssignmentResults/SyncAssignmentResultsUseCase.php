@@ -1,0 +1,80 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Grades\Grade\Application\SyncAssignmentResults;
+
+use Grades\Grade\Application\DTOs\NeoAssignmentResultDTO;
+use Grades\Grade\Domain\Ports\NeoAssignmentRepositoryContract;
+use Grades\Grade\Domain\Ports\NeoAssignmentResultRepositoryContract;
+use NeoLms\NeoSync\Domain\Ports\NeoLmsApiContract;
+use Throwable;
+
+final readonly class SyncAssignmentResultsUseCase
+{
+    public function __construct(
+        private NeoLmsApiContract $neoApi,
+        private NeoAssignmentResultRepositoryContract $resultRepository,
+        private NeoAssignmentRepositoryContract $assignmentRepository,
+    ) {}
+
+    public function execute(SyncAssignmentResultsCommand $command): SyncAssignmentResultsResult
+    {
+        $sisIdMap = $this->resultRepository->getUserSisIdMap();
+
+        $assignments = $command->classId !== null
+            ? $this->assignmentRepository->getAssignmentsByClass($command->classId)
+            : $this->assignmentRepository->getAllAssignments();
+
+        if ($command->assignmentId !== null) {
+            $assignments = array_values(array_filter(
+                $assignments,
+                static fn (array $a): bool => $a['neo_assignment_id'] === $command->assignmentId,
+            ));
+        }
+
+        $synced = 0;
+        $skipped = 0;
+        $errors = [];
+
+        foreach ($assignments as $assignment) {
+            try {
+                $results = $this->neoApi->getAssignmentResults(
+                    classId: $assignment['neo_class_id'],
+                    assignmentId: $assignment['neo_assignment_id'],
+                );
+
+                foreach ($results as $resultData) {
+                    $sisId = $sisIdMap[$resultData['user_id']] ?? null;
+                    $dto = NeoAssignmentResultDTO::fromApiResponse(
+                        data: $resultData,
+                        neoClassId: $assignment['neo_class_id'],
+                        neoAssignmentId: $assignment['neo_assignment_id'],
+                        sisId: $sisId,
+                    );
+
+                    if (! $this->resultRepository->hasChanged($dto->neoResultId, $dto->checksum())) {
+                        $skipped++;
+
+                        continue;
+                    }
+
+                    $this->resultRepository->upsert($dto);
+                    $synced++;
+                }
+            } catch (Throwable $e) {
+                $errors[] = [
+                    'class_id' => $assignment['neo_class_id'],
+                    'assignment_id' => $assignment['neo_assignment_id'],
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return new SyncAssignmentResultsResult(
+            synced: $synced,
+            skipped: $skipped,
+            errors: $errors,
+        );
+    }
+}
