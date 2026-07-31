@@ -137,6 +137,12 @@ interface NeoLmsApiContract
     /** GET /classes/{id}/assignments/{assignment_id}/results — respuestas individuales por alumno/pregunta. */
     public function getAssignmentResults(int $classId, int $assignmentId): array;
 
+    /** GET /users/{id}/assignment_grades?$count=true. */
+    public function countUserAssignmentGrades(int $neoUserId): int;
+
+    /** GET /users/{id}/assignment_grades — grades con timestamps detallados por alumno, todas sus clases. */
+    public function getUserAssignmentGrades(int $neoUserId, string $include = 'assignment'): array;
+
     // BATCHES
 
     /**

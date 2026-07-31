@@ -320,6 +320,18 @@ final class NeoHttpAdapter implements NeoLmsApiContract
         return $this->paginateAll("classes/{$classId}/assignments/{$assignmentId}/results");
     }
 
+    public function countUserAssignmentGrades(int $neoUserId): int
+    {
+        $response = $this->get("users/{$neoUserId}/assignment_grades", ['$count' => 'true']);
+
+        return (int) ($response['count'] ?? 0);
+    }
+
+    public function getUserAssignmentGrades(int $neoUserId, string $include = 'assignment'): array
+    {
+        return $this->paginateAll("users/{$neoUserId}/assignment_grades", ['$include' => $include]);
+    }
+
     // ─────────────────────────────────────────────────────────────
     // BATCHES
     // ─────────────────────────────────────────────────────────────
