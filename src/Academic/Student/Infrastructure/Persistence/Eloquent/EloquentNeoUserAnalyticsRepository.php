@@ -458,8 +458,8 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
                 r.neo_assignment_id,
                 a.neo_lesson_id,
                 a.lesson_name,
-                a.name AS assignment_name,
-                a.type AS assignment_type,
+                a.name                    AS assignment_name,
+                a.type                    AS assignment_type,
                 r.question_id,
                 r.response,
                 r.points,
@@ -472,16 +472,25 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
                 g.graded,
                 g.graded_at,
                 g.fully_graded,
-                g.percent AS grade_percent,
+                g.percent                 AS grade_percent,
+                g.grader_id,
+                grader.first_name         AS grader_first_name,
+                grader.last_name          AS grader_last_name,
+                grader.email              AS grader_email,
                 m.duration_minutes,
                 m.feedback_minutes,
                 m.time_to_start_minutes,
                 m.submitted_on_time,
                 m.minutes_before_deadline
             FROM neo_assignment_results r
-            JOIN neo_assignments a ON a.neo_assignment_id = r.neo_assignment_id
-            LEFT JOIN neo_assignment_grades g ON g.neo_grade_id = r.neo_grade_id
-            LEFT JOIN neo_assignment_grade_metrics m ON m.neo_grade_id = r.neo_grade_id
+            JOIN neo_assignments a
+                ON a.neo_assignment_id = r.neo_assignment_id
+            LEFT JOIN neo_assignment_grades g
+                ON g.neo_grade_id = r.neo_grade_id
+            LEFT JOIN neo_users grader
+                ON grader.neo_id = g.grader_id
+            LEFT JOIN neo_assignment_grade_metrics m
+                ON m.neo_grade_id = r.neo_grade_id
             WHERE r.neo_user_id = ?
             ORDER BY r.neo_class_id, r.neo_assignment_id, r.question_id NULLS LAST
         SQL, [$neoId]);
@@ -491,33 +500,39 @@ final class EloquentNeoUserAnalyticsRepository implements NeoUserAnalyticsReposi
             $classId = (int) $row->neo_class_id;
 
             $grouped[$classId][] = [
-                'neo_result_id' => (int) $row->neo_result_id,
-                'neo_grade_id' => (int) $row->neo_grade_id,
+                'neo_result_id'     => (int) $row->neo_result_id,
+                'neo_grade_id'      => (int) $row->neo_grade_id,
                 'neo_assignment_id' => (int) $row->neo_assignment_id,
-                'neo_lesson_id' => $row->neo_lesson_id !== null ? (int) $row->neo_lesson_id : null,
-                'lesson_name' => $row->lesson_name,
-                'assignment_name' => $row->assignment_name,
-                'assignment_type' => $row->assignment_type,
-                'question_id' => $row->question_id !== null ? (int) $row->question_id : null,
-                'response' => $row->response,
-                'points' => $row->points !== null ? (float) $row->points : null,
-                'score' => $row->score !== null ? (float) $row->score : null,
-                'grade' => $row->grade,
-                'grade_detail' => [
-                    'started' => (bool) $row->started,
-                    'started_at' => $this->toIso($row->started_at),
-                    'finished' => (bool) $row->finished,
-                    'finished_at' => $this->toIso($row->finished_at),
-                    'graded' => (int) ($row->graded ?? 0),
-                    'graded_at' => $this->toIso($row->graded_at),
+                'neo_lesson_id'     => $row->neo_lesson_id !== null ? (int) $row->neo_lesson_id : null,
+                'lesson_name'       => $row->lesson_name,
+                'assignment_name'   => $row->assignment_name,
+                'assignment_type'   => $row->assignment_type,
+                'question_id'       => $row->question_id !== null ? (int) $row->question_id : null,
+                'response'          => $row->response,
+                'points'            => $row->points !== null ? (float) $row->points : null,
+                'score'             => $row->score !== null ? (float) $row->score : null,
+                'grade'             => $row->grade,
+                'grade_detail'      => [
+                    'started'      => (bool) $row->started,
+                    'started_at'   => $this->toIso($row->started_at),
+                    'finished'     => (bool) $row->finished,
+                    'finished_at'  => $this->toIso($row->finished_at),
+                    'graded'       => (int) ($row->graded ?? 0),
+                    'graded_at'    => $this->toIso($row->graded_at),
                     'fully_graded' => (bool) $row->fully_graded,
-                    'percent' => $row->grade_percent !== null ? (float) $row->grade_percent : null,
+                    'percent'      => $row->grade_percent !== null ? (float) $row->grade_percent : null,
+                    'graded_by'    => $row->grader_id !== null ? [
+                        'neo_id'     => (int) $row->grader_id,
+                        'first_name' => $row->grader_first_name,
+                        'last_name'  => $row->grader_last_name,
+                        'email'      => $row->grader_email,
+                    ] : null,
                 ],
-                'metrics' => [
-                    'duration_minutes' => $row->duration_minutes !== null ? (float) $row->duration_minutes : null,
-                    'feedback_minutes' => $row->feedback_minutes !== null ? (float) $row->feedback_minutes : null,
-                    'time_to_start_minutes' => $row->time_to_start_minutes !== null ? (float) $row->time_to_start_minutes : null,
-                    'submitted_on_time' => $row->submitted_on_time !== null ? (bool) $row->submitted_on_time : null,
+                'metrics'           => [
+                    'duration_minutes'        => $row->duration_minutes !== null ? (float) $row->duration_minutes : null,
+                    'feedback_minutes'        => $row->feedback_minutes !== null ? (float) $row->feedback_minutes : null,
+                    'time_to_start_minutes'   => $row->time_to_start_minutes !== null ? (float) $row->time_to_start_minutes : null,
+                    'submitted_on_time'       => $row->submitted_on_time !== null ? (bool) $row->submitted_on_time : null,
                     'minutes_before_deadline' => $row->minutes_before_deadline !== null ? (float) $row->minutes_before_deadline : null,
                 ],
             ];
