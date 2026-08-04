@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use OpenApi\Annotations as OA;
 
 final class AuditLogController extends Controller
 {
@@ -18,6 +19,59 @@ final class AuditLogController extends Controller
         private readonly GetAuditLogUseCase $getAuditLogUseCase,
     ) {}
 
+    /**
+     * @OA\Get(
+     *     path="/api/v1/audit-logs",
+     *     tags={"AuditLog"},
+     *     summary="Listar registros de auditoría",
+     *     description="Retorna los registros de auditoría paginados, con filtros opcionales por usuario, módulo, acción, estado y rango de fechas.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="user_id", in="query", @OA\Schema(type="string", format="uuid")),
+     *     @OA\Parameter(name="module", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="action", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="status", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="from", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="to", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer", default=1)),
+     *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer", default=25)),
+     *
+     *     @OA\Response(response=200, description="Lista de registros de auditoría",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="array",
+     *
+     *                 @OA\Items(type="object",
+     *
+     *                     @OA\Property(property="id", type="string", format="uuid"),
+     *                     @OA\Property(property="user_id", type="string", format="uuid"),
+     *                     @OA\Property(property="user_email", type="string", nullable=true),
+     *                     @OA\Property(property="user_role", type="string", nullable=true),
+     *                     @OA\Property(property="module", type="string"),
+     *                     @OA\Property(property="action", type="string"),
+     *                     @OA\Property(property="entity_type", type="string", nullable=true),
+     *                     @OA\Property(property="entity_id", type="string", format="uuid", nullable=true),
+     *                     @OA\Property(property="old_values", type="object", nullable=true),
+     *                     @OA\Property(property="new_values", type="object", nullable=true),
+     *                     @OA\Property(property="metadata", type="object", nullable=true),
+     *                     @OA\Property(property="ip_address", type="string", nullable=true),
+     *                     @OA\Property(property="status", type="string"),
+     *                     @OA\Property(property="timestamp", type="string", format="date-time")
+     *                 )
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time"),
+     *                 @OA\Property(property="page", type="integer"),
+     *                 @OA\Property(property="per_page", type="integer")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="Sin permiso auth.audit.view")
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         $query = $this->queryFromRequest($request);
@@ -33,6 +87,30 @@ final class AuditLogController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/v1/audit-logs/export",
+     *     tags={"AuditLog"},
+     *     summary="Exportar registros de auditoría a CSV",
+     *     description="Exporta los registros de auditoría filtrados como archivo CSV descargable.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="user_id", in="query", @OA\Schema(type="string", format="uuid")),
+     *     @OA\Parameter(name="module", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="action", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="status", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="from", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="to", in="query", @OA\Schema(type="string", format="date")),
+     *
+     *     @OA\Response(response=200, description="Archivo CSV de auditoría",
+     *
+     *         @OA\MediaType(mediaType="text/csv")
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="Sin permiso auth.audit.export")
+     * )
+     */
     public function export(Request $request): Response
     {
         $csv = $this->getAuditLogUseCase->export($this->queryFromRequest($request));

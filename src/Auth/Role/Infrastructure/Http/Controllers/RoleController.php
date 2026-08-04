@@ -14,6 +14,7 @@ use Auth\Role\Infrastructure\Http\Requests\AssignRoleRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use OpenApi\Annotations as OA;
 
 final class RoleController extends Controller
 {
@@ -23,6 +24,40 @@ final class RoleController extends Controller
         private readonly RoleRepositoryContract $roles,
     ) {}
 
+    /**
+     * @OA\Get(
+     *     path="/api/v1/roles",
+     *     tags={"Role"},
+     *     summary="Listar roles",
+     *     description="Retorna todos los roles RBAC2 disponibles en el sistema.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Response(response=200, description="Lista de roles",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="array",
+     *
+     *                 @OA\Items(type="object",
+     *
+     *                     @OA\Property(property="id", type="string", format="uuid"),
+     *                     @OA\Property(property="name", type="string", example="super-admin"),
+     *                     @OA\Property(property="display_name", type="string"),
+     *                     @OA\Property(property="hierarchy_level", type="integer"),
+     *                     @OA\Property(property="is_system", type="boolean"),
+     *                     @OA\Property(property="two_factor_required", type="boolean")
+     *                 )
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="Sin permiso auth.roles.view")
+     * )
+     */
     public function index(): JsonResponse
     {
         $roles = array_map($this->roleToArray(...), $this->roles->all());
@@ -33,6 +68,38 @@ final class RoleController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/v1/users/{id}/roles",
+     *     tags={"Role"},
+     *     summary="Asignar rol a un usuario",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *
+     *     @OA\RequestBody(required=true,
+     *
+     *         @OA\JsonContent(required={"role_id"},
+     *
+     *             @OA\Property(property="role_id", type="string", format="uuid")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=201, description="Rol asignado",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="user_id", type="string", format="uuid"),
+     *                 @OA\Property(property="role_id", type="string", format="uuid")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="Sin permiso auth.roles.assign")
+     * )
+     */
     public function assign(AssignRoleRequest $request, string $id): JsonResponse
     {
         $this->assignRoleUseCase->execute(new AssignRoleCommand(
@@ -52,6 +119,28 @@ final class RoleController extends Controller
         ], 201);
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/users/{id}/roles/{roleId}",
+     *     tags={"Role"},
+     *     summary="Revocar rol de un usuario",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *     @OA\Parameter(name="roleId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *
+     *     @OA\Response(response=200, description="Rol revocado",
+     *
+     *         @OA\JsonContent(@OA\Property(property="data", type="object",
+     *
+     *             @OA\Property(property="message", type="string", example="Role revoked successfully.")
+     *         ))
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="Sin permiso auth.roles.revoke")
+     * )
+     */
     public function revoke(Request $request, string $id, string $roleId): JsonResponse
     {
         $this->revokeRoleUseCase->execute(new RevokeRoleCommand(

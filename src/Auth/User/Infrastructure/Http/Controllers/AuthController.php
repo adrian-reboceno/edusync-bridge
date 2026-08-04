@@ -25,10 +25,8 @@ use Auth\User\Infrastructure\Http\Requests\RefreshTokenRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use OpenApi\Annotations as OA;
 
-/**
- * @tags Auth
- */
 final class AuthController extends Controller
 {
     public function __construct(
@@ -43,13 +41,64 @@ final class AuthController extends Controller
     ) {}
 
     /**
-     * Iniciar sesión
+     * @OA\Post(
+     *     path="/api/v1/auth/login",
+     *     tags={"Auth"},
+     *     summary="Iniciar sesión",
+     *     description="Autentica al usuario. Si el rol requiere 2FA y no está configurado retorna requires_two_factor_setup=true. Si ya está configurado retorna requires_two_factor=true.",
      *
-     * Autentica al usuario con email y contraseña.
-     * Si el rol requiere 2FA y no está configurado, retorna requires_two_factor_setup=true.
-     * Si 2FA está configurado, retorna requires_two_factor=true y se debe enviar totp_code.
+     *     @OA\RequestBody(
+     *         required=true,
      *
-     * @bodyParam client_type string optional Tipo de cliente. WEB = refresh token 7 días, MOBILE = 30 días. Default: WEB.
+     *         @OA\JsonContent(
+     *             required={"email","password"},
+     *
+     *             @OA\Property(property="email", type="string", format="email", example="admin@edusync.edu"),
+     *             @OA\Property(property="password", type="string", minLength=8, example="Admin@2024!"),
+     *             @OA\Property(property="totp_code", type="string", nullable=true, minLength=6, maxLength=6, example="123456"),
+     *             @OA\Property(property="client_type", type="string", nullable=true, enum={"WEB","MOBILE"}, default="WEB", description="WEB=refresh 7 días, MOBILE=30 días"),
+     *             @OA\Property(property="selected_role_id", type="string", format="uuid", nullable=true)
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Login exitoso",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="access_token", type="string", nullable=true),
+     *                 @OA\Property(property="refresh_token", type="string", nullable=true),
+     *                 @OA\Property(property="user", type="object",
+     *                     @OA\Property(property="id", type="string", format="uuid"),
+     *                     @OA\Property(property="email", type="string"),
+     *                     @OA\Property(property="first_name", type="string"),
+     *                     @OA\Property(property="last_name", type="string"),
+     *                     @OA\Property(property="status", type="string")
+     *                 ),
+     *                 @OA\Property(property="active_role", type="object", nullable=true,
+     *                     @OA\Property(property="id", type="string", format="uuid"),
+     *                     @OA\Property(property="name", type="string", example="super-admin"),
+     *                     @OA\Property(property="display_name", type="string"),
+     *                     @OA\Property(property="hierarchy_level", type="integer")
+     *                 ),
+     *                 @OA\Property(property="requires_role_selection", type="boolean"),
+     *                 @OA\Property(property="available_roles", type="array", @OA\Items(type="object")),
+     *                 @OA\Property(property="requires_two_factor", type="boolean"),
+     *                 @OA\Property(property="requires_two_factor_setup", type="boolean"),
+     *                 @OA\Property(property="must_change_password", type="boolean")
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Credenciales inválidas"),
+     *     @OA\Response(response=423, description="Cuenta bloqueada"),
+     *     @OA\Response(response=429, description="Demasiados intentos")
+     * )
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -80,9 +129,31 @@ final class AuthController extends Controller
     }
 
     /**
-     * Verificar código TOTP (2FA)
+     * @OA\Post(
+     *     path="/api/v1/auth/2fa/verify",
+     *     tags={"Auth"},
+     *     summary="Verificar código TOTP (2FA)",
+     *     description="Alias de login con totp_code incluido. Completa la autenticación de dos factores.",
      *
-     * Alias de login con totp_code incluido. Completa la autenticación de dos factores.
+     *     @OA\RequestBody(
+     *         required=true,
+     *
+     *         @OA\JsonContent(
+     *             required={"email","password","totp_code"},
+     *
+     *             @OA\Property(property="email", type="string", format="email"),
+     *             @OA\Property(property="password", type="string", minLength=8),
+     *             @OA\Property(property="totp_code", type="string", minLength=6, maxLength=6, example="123456"),
+     *             @OA\Property(property="client_type", type="string", nullable=true, enum={"WEB","MOBILE"}, default="WEB"),
+     *             @OA\Property(property="selected_role_id", type="string", format="uuid", nullable=true)
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=200, description="Login exitoso"),
+     *     @OA\Response(response=401, description="Credenciales o código TOTP inválidos"),
+     *     @OA\Response(response=423, description="Cuenta bloqueada"),
+     *     @OA\Response(response=429, description="Demasiados intentos")
+     * )
      */
     public function verify2fa(LoginRequest $request): JsonResponse
     {
@@ -90,10 +161,34 @@ final class AuthController extends Controller
     }
 
     /**
-     * Renovar access token
+     * @OA\Post(
+     *     path="/api/v1/auth/refresh",
+     *     tags={"Auth"},
+     *     summary="Renovar access token",
+     *     description="Genera nuevos tokens usando el refresh token. El token anterior queda en blacklist (refresh rotation).",
      *
-     * Genera un nuevo par de tokens usando el refresh token.
-     * El refresh token anterior queda en blacklist (refresh rotation).
+     *     @OA\RequestBody(required=true,
+     *
+     *         @OA\JsonContent(
+     *             required={"refresh_token"},
+     *
+     *             @OA\Property(property="refresh_token", type="string")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=200, description="Tokens renovados",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="access_token", type="string"),
+     *                 @OA\Property(property="refresh_token", type="string")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Refresh token inválido o expirado")
+     * )
      */
     public function refresh(RefreshTokenRequest $request): JsonResponse
     {
@@ -111,9 +206,23 @@ final class AuthController extends Controller
     }
 
     /**
-     * Cerrar sesión
+     * @OA\Post(
+     *     path="/api/v1/auth/logout",
+     *     tags={"Auth"},
+     *     summary="Cerrar sesión",
+     *     description="Revoca la sesión activa y agrega el access token a la blacklist de Redis.",
+     *     security={{"bearerAuth":{}}},
      *
-     * Revoca la sesión activa y agrega el access token a la blacklist de Redis.
+     *     @OA\Response(response=200, description="Sesión cerrada",
+     *
+     *         @OA\JsonContent(@OA\Property(property="data", type="object",
+     *
+     *             @OA\Property(property="message", type="string", example="Logged out successfully.")
+     *         ))
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado")
+     * )
      */
     public function logout(Request $request): JsonResponse
     {
@@ -132,10 +241,35 @@ final class AuthController extends Controller
     }
 
     /**
-     * Cambiar rol activo (DSoD)
+     * @OA\Post(
+     *     path="/api/v1/auth/session/role",
+     *     tags={"Auth"},
+     *     summary="Cambiar rol activo (DSoD)",
+     *     description="Cambia el rol activo en la sesión actual. Emite un nuevo access token con los permisos del rol seleccionado.",
+     *     security={{"bearerAuth":{}}},
      *
-     * Cambia el rol activo en la sesión actual.
-     * Emite un nuevo access token con los permisos del rol seleccionado.
+     *     @OA\RequestBody(required=true,
+     *
+     *         @OA\JsonContent(required={"role_id"},
+     *
+     *             @OA\Property(property="role_id", type="string", format="uuid")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=200, description="Rol cambiado, nuevo access token emitido",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="access_token", type="string"),
+     *                 @OA\Property(property="active_role", type="object")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="Rol no permitido para este usuario (DSoD)")
+     * )
      */
     public function switchRole(Request $request): JsonResponse
     {
@@ -157,10 +291,26 @@ final class AuthController extends Controller
     }
 
     /**
-     * Desbloquear cuenta de usuario
+     * @OA\Post(
+     *     path="/api/v1/users/{id}/unlock",
+     *     tags={"Auth"},
+     *     summary="Desbloquear cuenta de usuario",
+     *     description="Desbloquea una cuenta bloqueada por intentos fallidos. Requiere permiso: auth.users.unlock",
+     *     security={{"bearerAuth":{}}},
      *
-     * Desbloquea una cuenta bloqueada por intentos fallidos.
-     * Requiere permiso: auth.users.unlock
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *
+     *     @OA\Response(response=200, description="Cuenta desbloqueada",
+     *
+     *         @OA\JsonContent(@OA\Property(property="data", type="object",
+     *
+     *             @OA\Property(property="message", type="string", example="User unlocked successfully.")
+     *         ))
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="Sin permiso auth.users.unlock")
+     * )
      */
     public function unlock(Request $request, string $id): JsonResponse
     {
@@ -178,10 +328,33 @@ final class AuthController extends Controller
     }
 
     /**
-     * Configurar autenticación de dos factores
+     * @OA\Post(
+     *     path="/api/v1/auth/2fa/setup",
+     *     tags={"Auth"},
+     *     summary="Configurar autenticación de dos factores",
+     *     description="Genera un secreto TOTP y retorna el QR en base64 (SVG) para escanear con Google Authenticator.",
      *
-     * Genera un secreto TOTP y retorna el QR en base64 (SVG)
-     * para escanear con Google Authenticator o similar.
+     *     @OA\RequestBody(required=true,
+     *
+     *         @OA\JsonContent(required={"email"},
+     *
+     *             @OA\Property(property="email", type="string", format="email")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=200, description="QR y secreto generados",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="secret", type="string", example="JBSWY3DPEHPK3PXP"),
+     *                 @OA\Property(property="qr_code_url", type="string"),
+     *                 @OA\Property(property="qr_svg", type="string", description="SVG en base64"),
+     *                 @OA\Property(property="instructions", type="string")
+     *             )
+     *         )
+     *     )
+     * )
      */
     public function setup2fa(Request $request): JsonResponse
     {
@@ -201,10 +374,32 @@ final class AuthController extends Controller
     }
 
     /**
-     * Activar autenticación de dos factores
+     * @OA\Post(
+     *     path="/api/v1/auth/2fa/enable",
+     *     tags={"Auth"},
+     *     summary="Activar autenticación de dos factores",
+     *     description="Verifica el código TOTP con el secreto provisional y activa 2FA en la cuenta del usuario. A partir de este momento el login requiere código.",
      *
-     * Verifica el código TOTP con el secreto provisional y activa 2FA
-     * en la cuenta del usuario. A partir de este momento el login requiere código.
+     *     @OA\RequestBody(required=true,
+     *
+     *         @OA\JsonContent(required={"email","secret","totp_code"},
+     *
+     *             @OA\Property(property="email", type="string", format="email"),
+     *             @OA\Property(property="secret", type="string"),
+     *             @OA\Property(property="totp_code", type="string", minLength=6, maxLength=6)
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=200, description="2FA activado",
+     *
+     *         @OA\JsonContent(@OA\Property(property="data", type="object",
+     *
+     *             @OA\Property(property="message", type="string", example="2FA activado correctamente. Ya puedes iniciar sesión con tu código TOTP.")
+     *         ))
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Código TOTP inválido")
+     * )
      */
     public function enable2fa(Request $request): JsonResponse
     {
@@ -223,10 +418,28 @@ final class AuthController extends Controller
     }
 
     /**
-     * Obtener datos del usuario autenticado
+     * @OA\Get(
+     *     path="/api/v1/auth/me",
+     *     tags={"Auth"},
+     *     summary="Datos del usuario autenticado",
+     *     description="Retorna el perfil, rol activo y permisos del usuario autenticado a partir del JWT sin consultar la BD.",
+     *     security={{"bearerAuth":{}}},
      *
-     * Retorna el perfil, rol activo y permisos del usuario autenticado
-     * a partir del JWT sin consultar la BD.
+     *     @OA\Response(response=200, description="Perfil del usuario",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="user", type="object"),
+     *                 @OA\Property(property="active_role_id", type="string", format="uuid"),
+     *                 @OA\Property(property="permissions", type="array", @OA\Items(type="string")),
+     *                 @OA\Property(property="session_id", type="string", format="uuid")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado")
+     * )
      */
     public function me(Request $request): JsonResponse
     {

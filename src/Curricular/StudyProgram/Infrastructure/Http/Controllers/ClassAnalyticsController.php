@@ -15,10 +15,8 @@ use Grades\Grade\Application\GetAnalytics\GetAssignmentResultsUseCase;
 use Grades\Grade\Application\GetAnalytics\GetClassAssignmentsUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
+use OpenApi\Annotations as OA;
 
-/**
- * @tags Analytics - Clases
- */
 final class ClassAnalyticsController extends Controller
 {
     public function __construct(
@@ -32,9 +30,38 @@ final class ClassAnalyticsController extends Controller
     ) {}
 
     /**
-     * Resumen general de clases
+     * @OA\Get(
+     *     path="/api/v1/analytics/classes/summary",
+     *     tags={"Analytics - Clases"},
+     *     summary="Resumen general de clases",
+     *     description="Retorna totales, distribución por organización y por estilo de clase.",
+     *     security={{"bearerAuth":{}}},
      *
-     * Retorna totales, distribución por organización y por estilo de clase.
+     *     @OA\Response(response=200, description="Resumen de clases",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="totals", type="object",
+     *                     @OA\Property(property="total_classes", type="integer"),
+     *                     @OA\Property(property="active", type="integer"),
+     *                     @OA\Property(property="archived", type="integer"),
+     *                     @OA\Property(property="total_enrollments", type="integer"),
+     *                     @OA\Property(property="total_teachers", type="integer")
+     *                 ),
+     *                 @OA\Property(property="by_organization", type="array", @OA\Items(type="object")),
+     *                 @OA\Property(property="by_style", type="array", @OA\Items(type="object")),
+     *                 @OA\Property(property="last_synced_at", type="string", format="date-time", nullable=true)
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="No autenticado"),
+     *     @OA\Response(response=403, description="Sin permiso reports.sync.view")
+     * )
      */
     public function summary(): JsonResponse
     {
@@ -58,9 +85,31 @@ final class ClassAnalyticsController extends Controller
     }
 
     /**
-     * Lista paginada de clases
+     * @OA\Get(
+     *     path="/api/v1/analytics/classes",
+     *     tags={"Analytics - Clases"},
+     *     summary="Lista paginada de clases",
+     *     description="Retorna clases activas con métricas agregadas de inscripciones y docentes.",
+     *     security={{"bearerAuth":{}}},
      *
-     * Retorna clases activas con métricas agregadas de inscripciones y docentes.
+     *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer", default=1)),
+     *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer", default=20, maximum=100)),
+     *
+     *     @OA\Response(response=200, description="Lista de clases",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object")),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time"),
+     *                 @OA\Property(property="page", type="integer"),
+     *                 @OA\Property(property="per_page", type="integer"),
+     *                 @OA\Property(property="total", type="integer"),
+     *                 @OA\Property(property="total_pages", type="integer")
+     *             )
+     *         )
+     *     )
+     * )
      */
     public function index(GetClassesListRequest $request): JsonResponse
     {
@@ -85,10 +134,33 @@ final class ClassAnalyticsController extends Controller
     }
 
     /**
-     * Detalle de una clase
+     * @OA\Get(
+     *     path="/api/v1/analytics/classes/{neoId}",
+     *     tags={"Analytics - Clases"},
+     *     summary="Detalle de una clase",
+     *     description="Retorna la clase, un resumen de inscripciones, docentes y alumnos.",
+     *     security={{"bearerAuth":{}}},
      *
-     * Retorna la clase, un resumen de inscripciones, docentes y alumnos.
-     * Responde 404 si la clase no existe.
+     *     @OA\Parameter(name="neoId", in="path", required=true, @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Detalle de la clase",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="class", type="object"),
+     *                 @OA\Property(property="summary", type="object"),
+     *                 @OA\Property(property="teachers", type="array", @OA\Items(type="object")),
+     *                 @OA\Property(property="students", type="array", @OA\Items(type="object"))
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="Clase no encontrada")
+     * )
      */
     public function show(int $neoId): JsonResponse
     {
@@ -116,10 +188,34 @@ final class ClassAnalyticsController extends Controller
     }
 
     /**
-     * Lessons y sections de una clase
+     * @OA\Get(
+     *     path="/api/v1/analytics/classes/{neoId}/lessons",
+     *     tags={"Analytics - Clases"},
+     *     summary="Lessons y sections de una clase",
+     *     description="Retorna el curriculum (lessons con sus sections anidadas) de una clase.",
+     *     security={{"bearerAuth":{}}},
      *
-     * Retorna el curriculum (lessons con sus sections anidadas) de una clase.
-     * Responde 404 si la clase no existe.
+     *     @OA\Parameter(name="neoId", in="path", required=true, @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Curriculum de la clase",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="class_id", type="integer"),
+     *                 @OA\Property(property="class_name", type="string"),
+     *                 @OA\Property(property="total_lessons", type="integer"),
+     *                 @OA\Property(property="total_sections", type="integer"),
+     *                 @OA\Property(property="lessons", type="array", @OA\Items(type="object"))
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="Clase no encontrada")
+     * )
      */
     public function lessons(int $neoId): JsonResponse
     {
@@ -148,11 +244,33 @@ final class ClassAnalyticsController extends Controller
     }
 
     /**
-     * Assignments de una clase
+     * @OA\Get(
+     *     path="/api/v1/analytics/classes/{neoId}/assignments",
+     *     tags={"Analytics - Clases"},
+     *     summary="Assignments de una clase",
+     *     description="Retorna los assignments de una clase junto con totales agregados (entregados, pendientes, puntos, distribución por tipo y por modo de calificación).",
+     *     security={{"bearerAuth":{}}},
      *
-     * Retorna los assignments de una clase junto con totales agregados
-     * (entregados, pendientes, puntos, distribución por tipo y por modo de calificación).
-     * Responde 404 si la clase no existe.
+     *     @OA\Parameter(name="neoId", in="path", required=true, @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Assignments de la clase",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="class_id", type="integer"),
+     *                 @OA\Property(property="class_name", type="string"),
+     *                 @OA\Property(property="totals", type="object"),
+     *                 @OA\Property(property="assignments", type="array", @OA\Items(type="object"))
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="Clase no encontrada")
+     * )
      */
     public function assignments(int $neoId): JsonResponse
     {
@@ -180,11 +298,33 @@ final class ClassAnalyticsController extends Controller
     }
 
     /**
-     * Calificaciones de un assignment
+     * @OA\Get(
+     *     path="/api/v1/analytics/classes/{neoId}/assignments/{assignmentId}/grades",
+     *     tags={"Analytics - Clases"},
+     *     summary="Calificaciones de un assignment",
+     *     description="Retorna el assignment, estadísticas agregadas (promedios, distribución de calificaciones) y la lista de calificaciones por alumno.",
+     *     security={{"bearerAuth":{}}},
      *
-     * Retorna el assignment, estadísticas agregadas (promedios, distribución de
-     * calificaciones) y la lista de calificaciones por alumno.
-     * Responde 404 si la clase o el assignment no existen.
+     *     @OA\Parameter(name="neoId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="assignmentId", in="path", required=true, @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Calificaciones del assignment",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="assignment", type="object"),
+     *                 @OA\Property(property="stats", type="object"),
+     *                 @OA\Property(property="grades", type="array", @OA\Items(type="object"))
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="Clase o assignment no encontrados")
+     * )
      */
     public function assignmentGrades(int $neoId, int $assignmentId): JsonResponse
     {
@@ -211,11 +351,33 @@ final class ClassAnalyticsController extends Controller
     }
 
     /**
-     * Resultados de un assignment
+     * @OA\Get(
+     *     path="/api/v1/analytics/classes/{neoId}/assignments/{assignmentId}/results",
+     *     tags={"Analytics - Clases"},
+     *     summary="Resultados de un assignment",
+     *     description="Retorna las respuestas individuales de los alumnos para un assignment (una por pregunta en quizzes, una por entrega en texto libre).",
+     *     security={{"bearerAuth":{}}},
      *
-     * Retorna las respuestas individuales de los alumnos para un assignment
-     * (una por pregunta en quizzes, una por entrega en texto libre).
-     * Responde 404 si la clase o el assignment no existen.
+     *     @OA\Parameter(name="neoId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="assignmentId", in="path", required=true, @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Resultados del assignment",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="assignment", type="object"),
+     *                 @OA\Property(property="total_results", type="integer"),
+     *                 @OA\Property(property="results", type="array", @OA\Items(type="object"))
+     *             ),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="timestamp", type="string", format="date-time")
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=404, description="Clase o assignment no encontrados")
+     * )
      */
     public function assignmentResults(int $neoId, int $assignmentId): JsonResponse
     {
