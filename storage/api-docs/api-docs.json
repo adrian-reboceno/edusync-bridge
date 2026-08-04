@@ -1,0 +1,2611 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "EduSync Bridge API",
+        "description": "API de integración bidireccional entre Control Escolar (Tecnológico de Monterrey) y CYPHER Learning NEO LMS v3. Gestiona sincronización de alumnos, docentes, inscripciones, calificaciones y analítica académica.",
+        "contact": {
+            "email": "admin@edusync.edu"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000",
+            "description": "Local"
+        }
+    ],
+    "paths": {
+        "/api/v1/analytics/users/summary": {
+            "get": {
+                "tags": [
+                    "Analytics - Usuarios"
+                ],
+                "summary": "Resumen general de usuarios",
+                "description": "Retorna totales, distribución por rol, tasa de activación y estadísticas de sesiones de la organización.",
+                "operationId": "3329e3edc548a14fc3e4eb4ca15e9cfd",
+                "responses": {
+                    "200": {
+                        "description": "Distribución y totales",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "totals": {
+                                                    "properties": {
+                                                        "total": {
+                                                            "type": "integer",
+                                                            "example": 32
+                                                        },
+                                                        "activated": {
+                                                            "type": "integer",
+                                                            "example": 9
+                                                        },
+                                                        "never_logged_in": {
+                                                            "type": "integer",
+                                                            "example": 23
+                                                        },
+                                                        "activation_rate": {
+                                                            "type": "number",
+                                                            "example": 28.1
+                                                        },
+                                                        "archived": {
+                                                            "type": "integer",
+                                                            "example": 0
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "by_role": {
+                                                    "properties": {
+                                                        "students": {
+                                                            "type": "integer",
+                                                            "example": 16
+                                                        },
+                                                        "teachers": {
+                                                            "type": "integer",
+                                                            "example": 11
+                                                        },
+                                                        "administrators": {
+                                                            "type": "integer",
+                                                            "example": 2
+                                                        },
+                                                        "others": {
+                                                            "type": "integer",
+                                                            "example": 3
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "sessions": {
+                                                    "properties": {
+                                                        "total_sessions": {
+                                                            "type": "integer"
+                                                        },
+                                                        "users_with_sessions": {
+                                                            "type": "integer"
+                                                        },
+                                                        "avg_sessions_per_user": {
+                                                            "type": "number"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "organizations": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 228280
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Tec de Monterrey Sandbox"
+                                                            },
+                                                            "totals": {
+                                                                "type": "object"
+                                                            },
+                                                            "by_role": {
+                                                                "type": "object"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "last_synced_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Sin permiso reports.sync.view"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/users": {
+            "get": {
+                "tags": [
+                    "Analytics - Usuarios"
+                ],
+                "summary": "Lista paginada de usuarios",
+                "description": "Retorna todos los usuarios con datos de actividad y sesiones. Soporta filtrado por rol, estado de activación y búsqueda.",
+                "operationId": "031e4e499d89e1a5edf7949e89b90d3b",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Student",
+                                "Teacher",
+                                "Administrator",
+                                "Mentor",
+                                "Monitor",
+                                "TA"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "activated",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "last_login_at",
+                                "first_login_at",
+                                "joined_at",
+                                "first_name",
+                                "last_name"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "order_dir",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de usuarios",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "neo_id": {
+                                                        "type": "integer",
+                                                        "example": 13380636
+                                                    },
+                                                    "sis_id": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "first_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "last_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "roles": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "organization_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "joined_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "nullable": true
+                                                    },
+                                                    "first_login_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "nullable": true
+                                                    },
+                                                    "last_login_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "nullable": true
+                                                    },
+                                                    "activated": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "days_since_login": {
+                                                        "type": "integer",
+                                                        "nullable": true
+                                                    },
+                                                    "total_sessions": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "total_pages": {
+                                                    "type": "integer"
+                                                },
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/users/daily-access": {
+            "get": {
+                "tags": [
+                    "Analytics - Usuarios"
+                ],
+                "summary": "Accesos diarios para gráfica de barras",
+                "description": "Retorna sesiones agregadas por día para el período indicado. Incluye días sin actividad (valor 0) para series de tiempo continuas.",
+                "operationId": "07011ff2dcc755dc28e547a2a05e5603",
+                "parameters": [
+                    {
+                        "name": "days",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 30,
+                            "maximum": 365
+                        }
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Serie de tiempo de accesos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "period": {
+                                                    "properties": {
+                                                        "from": {
+                                                            "type": "string",
+                                                            "format": "date"
+                                                        },
+                                                        "to": {
+                                                            "type": "string",
+                                                            "format": "date"
+                                                        },
+                                                        "days": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "daily": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "date": {
+                                                                "type": "string",
+                                                                "format": "date"
+                                                            },
+                                                            "total_sessions": {
+                                                                "type": "integer"
+                                                            },
+                                                            "unique_users": {
+                                                                "type": "integer"
+                                                            },
+                                                            "total_minutes": {
+                                                                "type": "number",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "totals": {
+                                                    "properties": {
+                                                        "total_sessions": {
+                                                            "type": "integer"
+                                                        },
+                                                        "unique_users": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_minutes": {
+                                                            "type": "number",
+                                                            "nullable": true
+                                                        },
+                                                        "avg_sessions_per_day": {
+                                                            "type": "number",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/users/{neoId}": {
+            "get": {
+                "tags": [
+                    "Analytics - Usuarios"
+                ],
+                "summary": "Detalle completo de un usuario",
+                "description": "Retorna perfil, sesiones, clases inscritas con resultados de assignments (grade_detail, metrics, graded_by) y daily streak con racha activa.",
+                "operationId": "53e0b92b9361c964f0c7d931233cf676",
+                "parameters": [
+                    {
+                        "name": "neoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 13380644
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle del usuario",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "user": {
+                                                    "properties": {
+                                                        "neo_id": {
+                                                            "type": "integer",
+                                                            "example": 13380644
+                                                        },
+                                                        "sis_id": {
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "first_name": {
+                                                            "type": "string",
+                                                            "example": "Damian"
+                                                        },
+                                                        "last_name": {
+                                                            "type": "string",
+                                                            "example": "Blyne"
+                                                        },
+                                                        "email": {
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "roles": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "organization_name": {
+                                                            "type": "string"
+                                                        },
+                                                        "joined_at": {
+                                                            "type": "string",
+                                                            "format": "date-time"
+                                                        },
+                                                        "first_login_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "nullable": true
+                                                        },
+                                                        "last_login_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "nullable": true
+                                                        },
+                                                        "activated": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "days_since_last_login": {
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "sessions_summary": {
+                                                    "properties": {
+                                                        "total_sessions": {
+                                                            "type": "integer",
+                                                            "example": 4
+                                                        },
+                                                        "total_hours": {
+                                                            "type": "number",
+                                                            "example": 0.1
+                                                        },
+                                                        "avg_duration_minutes": {
+                                                            "type": "number",
+                                                            "nullable": true
+                                                        },
+                                                        "first_session_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "nullable": true
+                                                        },
+                                                        "last_session_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "daily_activity": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "date": {
+                                                                "type": "string",
+                                                                "format": "date"
+                                                            },
+                                                            "sessions": {
+                                                                "type": "integer"
+                                                            },
+                                                            "total_minutes": {
+                                                                "type": "number",
+                                                                "nullable": true
+                                                            },
+                                                            "avg_minutes": {
+                                                                "type": "number",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "sessions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "login_at": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            },
+                                                            "logout_at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "nullable": true
+                                                            },
+                                                            "duration_minutes": {
+                                                                "type": "number",
+                                                                "nullable": true
+                                                            },
+                                                            "ip_address": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "classes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "neo_class_id": {
+                                                                "type": "integer",
+                                                                "example": 5454236
+                                                            },
+                                                            "class_name": {
+                                                                "type": "string"
+                                                            },
+                                                            "organization_name": {
+                                                                "type": "string"
+                                                            },
+                                                            "start_at": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "nullable": true
+                                                            },
+                                                            "finish_at": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "nullable": true
+                                                            },
+                                                            "enrolled_at": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            },
+                                                            "enroll_type": {
+                                                                "type": "string"
+                                                            },
+                                                            "started": {
+                                                                "type": "boolean"
+                                                            },
+                                                            "started_at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "nullable": true
+                                                            },
+                                                            "completed": {
+                                                                "type": "boolean"
+                                                            },
+                                                            "completed_at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "nullable": true
+                                                            },
+                                                            "unenrolled": {
+                                                                "type": "boolean"
+                                                            },
+                                                            "last_visited_at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "nullable": true
+                                                            },
+                                                            "time_spent_seconds": {
+                                                                "type": "integer"
+                                                            },
+                                                            "time_spent_hours": {
+                                                                "type": "number"
+                                                            },
+                                                            "percent": {
+                                                                "type": "number",
+                                                                "nullable": true
+                                                            },
+                                                            "grade": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "result": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "properties": {
+                                                                        "neo_result_id": {
+                                                                            "type": "integer"
+                                                                        },
+                                                                        "neo_grade_id": {
+                                                                            "type": "integer"
+                                                                        },
+                                                                        "neo_assignment_id": {
+                                                                            "type": "integer"
+                                                                        },
+                                                                        "neo_lesson_id": {
+                                                                            "type": "integer",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "lesson_name": {
+                                                                            "type": "string",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "assignment_name": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "assignment_type": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "question_id": {
+                                                                            "type": "integer",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "response": {
+                                                                            "type": "string",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "points": {
+                                                                            "type": "number",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "score": {
+                                                                            "type": "number",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "grade": {
+                                                                            "type": "string",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "grade_detail": {
+                                                                            "properties": {
+                                                                                "started": {
+                                                                                    "type": "boolean"
+                                                                                },
+                                                                                "started_at": {
+                                                                                    "type": "string",
+                                                                                    "format": "date-time",
+                                                                                    "nullable": true
+                                                                                },
+                                                                                "finished": {
+                                                                                    "type": "boolean"
+                                                                                },
+                                                                                "finished_at": {
+                                                                                    "type": "string",
+                                                                                    "format": "date-time",
+                                                                                    "nullable": true
+                                                                                },
+                                                                                "graded": {
+                                                                                    "type": "integer"
+                                                                                },
+                                                                                "graded_at": {
+                                                                                    "type": "string",
+                                                                                    "format": "date-time",
+                                                                                    "nullable": true
+                                                                                },
+                                                                                "fully_graded": {
+                                                                                    "type": "boolean"
+                                                                                },
+                                                                                "percent": {
+                                                                                    "type": "number",
+                                                                                    "nullable": true
+                                                                                },
+                                                                                "graded_by": {
+                                                                                    "properties": {
+                                                                                        "neo_id": {
+                                                                                            "type": "integer"
+                                                                                        },
+                                                                                        "first_name": {
+                                                                                            "type": "string"
+                                                                                        },
+                                                                                        "last_name": {
+                                                                                            "type": "string"
+                                                                                        },
+                                                                                        "email": {
+                                                                                            "type": "string",
+                                                                                            "nullable": true
+                                                                                        }
+                                                                                    },
+                                                                                    "type": "object",
+                                                                                    "nullable": true
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        },
+                                                                        "metrics": {
+                                                                            "properties": {
+                                                                                "duration_minutes": {
+                                                                                    "type": "number",
+                                                                                    "nullable": true
+                                                                                },
+                                                                                "feedback_minutes": {
+                                                                                    "type": "number",
+                                                                                    "nullable": true
+                                                                                },
+                                                                                "time_to_start_minutes": {
+                                                                                    "type": "number",
+                                                                                    "nullable": true
+                                                                                },
+                                                                                "submitted_on_time": {
+                                                                                    "type": "boolean",
+                                                                                    "nullable": true
+                                                                                },
+                                                                                "minutes_before_deadline": {
+                                                                                    "type": "number",
+                                                                                    "nullable": true
+                                                                                }
+                                                                            },
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "daily_streak": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "neo_class_id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "class_name": {
+                                                                "type": "string"
+                                                            },
+                                                            "history": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "properties": {
+                                                                        "recorded_at": {
+                                                                            "type": "string",
+                                                                            "format": "date-time"
+                                                                        },
+                                                                        "percent": {
+                                                                            "type": "number",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "grade": {
+                                                                            "type": "string",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "prev_percent": {
+                                                                            "type": "number",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "prev_grade": {
+                                                                            "type": "string",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "delta_percent": {
+                                                                            "type": "number",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "time_spent_seconds": {
+                                                                            "type": "integer",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "last_visited_at": {
+                                                                            "type": "string",
+                                                                            "format": "date-time",
+                                                                            "nullable": true
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            },
+                                                            "total_daily_streak": {
+                                                                "type": "integer",
+                                                                "example": 2
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/users/{neoId}/grades": {
+            "get": {
+                "tags": [
+                    "Analytics - Usuarios"
+                ],
+                "summary": "Calificaciones de un usuario",
+                "description": "Retorna el perfil resumido del usuario, un resumen de desempeño (promedios, assignments completados) y el detalle de sus calificaciones en todas sus clases.",
+                "operationId": "13b2dd2473ca126ff86616112b05d9a5",
+                "parameters": [
+                    {
+                        "name": "neoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Calificaciones del usuario",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "user": {
+                                                    "type": "object"
+                                                },
+                                                "summary": {
+                                                    "type": "object"
+                                                },
+                                                "grades": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/audit-logs": {
+            "get": {
+                "tags": [
+                    "AuditLog"
+                ],
+                "summary": "Listar registros de auditoría",
+                "description": "Retorna los registros de auditoría paginados, con filtros opcionales por usuario, módulo, acción, estado y rango de fechas.",
+                "operationId": "03857ef6bf44e77dc47376101ff587cc",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "module",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 25
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de registros de auditoría",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "format": "uuid"
+                                                    },
+                                                    "user_id": {
+                                                        "type": "string",
+                                                        "format": "uuid"
+                                                    },
+                                                    "user_email": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "user_role": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "module": {
+                                                        "type": "string"
+                                                    },
+                                                    "action": {
+                                                        "type": "string"
+                                                    },
+                                                    "entity_type": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "entity_id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "nullable": true
+                                                    },
+                                                    "old_values": {
+                                                        "type": "object",
+                                                        "nullable": true
+                                                    },
+                                                    "new_values": {
+                                                        "type": "object",
+                                                        "nullable": true
+                                                    },
+                                                    "metadata": {
+                                                        "type": "object",
+                                                        "nullable": true
+                                                    },
+                                                    "ip_address": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "status": {
+                                                        "type": "string"
+                                                    },
+                                                    "timestamp": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Sin permiso auth.audit.view"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/audit-logs/export": {
+            "get": {
+                "tags": [
+                    "AuditLog"
+                ],
+                "summary": "Exportar registros de auditoría a CSV",
+                "description": "Exporta los registros de auditoría filtrados como archivo CSV descargable.",
+                "operationId": "1682991bca1f41409404c06b0349c62c",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "module",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Archivo CSV de auditoría",
+                        "content": {
+                            "text/csv": {}
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Sin permiso auth.audit.export"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/roles": {
+            "get": {
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Listar roles",
+                "description": "Retorna todos los roles RBAC2 disponibles en el sistema.",
+                "operationId": "d30903ea8db659b3fa2ccdf0e52858f5",
+                "responses": {
+                    "200": {
+                        "description": "Lista de roles",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "format": "uuid"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "super-admin"
+                                                    },
+                                                    "display_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "hierarchy_level": {
+                                                        "type": "integer"
+                                                    },
+                                                    "is_system": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "two_factor_required": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Sin permiso auth.roles.view"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/{id}/roles": {
+            "post": {
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Asignar rol a un usuario",
+                "operationId": "fabd2089bcddf3c6cf41d6550e04153c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "role_id"
+                                ],
+                                "properties": {
+                                    "role_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Rol asignado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "user_id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "role_id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Sin permiso auth.roles.assign"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/{id}/roles/{roleId}": {
+            "delete": {
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Revocar rol de un usuario",
+                "operationId": "f748a78767c81ff835b649ed9076c0df",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "roleId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rol revocado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Role revoked successfully."
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Sin permiso auth.roles.revoke"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Iniciar sesión",
+                "description": "Autentica al usuario. Si el rol requiere 2FA y no está configurado retorna requires_two_factor_setup=true. Si ya está configurado retorna requires_two_factor=true.",
+                "operationId": "295c3a0de26c4d16716df38e534dc356",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@edusync.edu"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "Admin@2024!",
+                                        "minLength": 8
+                                    },
+                                    "totp_code": {
+                                        "type": "string",
+                                        "example": "123456",
+                                        "nullable": true,
+                                        "maxLength": 6,
+                                        "minLength": 6
+                                    },
+                                    "client_type": {
+                                        "description": "WEB=refresh 7 días, MOBILE=30 días",
+                                        "type": "string",
+                                        "nullable": true,
+                                        "default": "WEB",
+                                        "enum": [
+                                            "WEB",
+                                            "MOBILE"
+                                        ]
+                                    },
+                                    "selected_role_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login exitoso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "access_token": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "refresh_token": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "user": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid"
+                                                        },
+                                                        "email": {
+                                                            "type": "string"
+                                                        },
+                                                        "first_name": {
+                                                            "type": "string"
+                                                        },
+                                                        "last_name": {
+                                                            "type": "string"
+                                                        },
+                                                        "status": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "active_role": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "super-admin"
+                                                        },
+                                                        "display_name": {
+                                                            "type": "string"
+                                                        },
+                                                        "hierarchy_level": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "requires_role_selection": {
+                                                    "type": "boolean"
+                                                },
+                                                "available_roles": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "requires_two_factor": {
+                                                    "type": "boolean"
+                                                },
+                                                "requires_two_factor_setup": {
+                                                    "type": "boolean"
+                                                },
+                                                "must_change_password": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Credenciales inválidas"
+                    },
+                    "423": {
+                        "description": "Cuenta bloqueada"
+                    },
+                    "429": {
+                        "description": "Demasiados intentos"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/2fa/verify": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verificar código TOTP (2FA)",
+                "description": "Alias de login con totp_code incluido. Completa la autenticación de dos factores.",
+                "operationId": "f4a6092628987d207ac973a991198a3e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password",
+                                    "totp_code"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 8
+                                    },
+                                    "totp_code": {
+                                        "type": "string",
+                                        "example": "123456",
+                                        "maxLength": 6,
+                                        "minLength": 6
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "default": "WEB",
+                                        "enum": [
+                                            "WEB",
+                                            "MOBILE"
+                                        ]
+                                    },
+                                    "selected_role_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login exitoso"
+                    },
+                    "401": {
+                        "description": "Credenciales o código TOTP inválidos"
+                    },
+                    "423": {
+                        "description": "Cuenta bloqueada"
+                    },
+                    "429": {
+                        "description": "Demasiados intentos"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Renovar access token",
+                "description": "Genera nuevos tokens usando el refresh token. El token anterior queda en blacklist (refresh rotation).",
+                "operationId": "d64dda27cbb3c69bfb17f0a05e1591f7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "refresh_token"
+                                ],
+                                "properties": {
+                                    "refresh_token": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tokens renovados",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "access_token": {
+                                                    "type": "string"
+                                                },
+                                                "refresh_token": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Refresh token inválido o expirado"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Cerrar sesión",
+                "description": "Revoca la sesión activa y agrega el access token a la blacklist de Redis.",
+                "operationId": "c7f70801e17ec94b9398529425532a95",
+                "responses": {
+                    "200": {
+                        "description": "Sesión cerrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Logged out successfully."
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/session/role": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Cambiar rol activo (DSoD)",
+                "description": "Cambia el rol activo en la sesión actual. Emite un nuevo access token con los permisos del rol seleccionado.",
+                "operationId": "d48cdf9fdd613cca048b9ecd3868aff9",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "role_id"
+                                ],
+                                "properties": {
+                                    "role_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rol cambiado, nuevo access token emitido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "access_token": {
+                                                    "type": "string"
+                                                },
+                                                "active_role": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Rol no permitido para este usuario (DSoD)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/{id}/unlock": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Desbloquear cuenta de usuario",
+                "description": "Desbloquea una cuenta bloqueada por intentos fallidos. Requiere permiso: auth.users.unlock",
+                "operationId": "be9b41a34a2fa9d05baa271e1d120fb6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cuenta desbloqueada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "User unlocked successfully."
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Sin permiso auth.users.unlock"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/2fa/setup": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Configurar autenticación de dos factores",
+                "description": "Genera un secreto TOTP y retorna el QR en base64 (SVG) para escanear con Google Authenticator.",
+                "operationId": "c44294fbd60272ef7c5d603832ddf68f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "QR y secreto generados",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "secret": {
+                                                    "type": "string",
+                                                    "example": "JBSWY3DPEHPK3PXP"
+                                                },
+                                                "qr_code_url": {
+                                                    "type": "string"
+                                                },
+                                                "qr_svg": {
+                                                    "description": "SVG en base64",
+                                                    "type": "string"
+                                                },
+                                                "instructions": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/2fa/enable": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Activar autenticación de dos factores",
+                "description": "Verifica el código TOTP con el secreto provisional y activa 2FA en la cuenta del usuario. A partir de este momento el login requiere código.",
+                "operationId": "0c1b3631d7e4767f1c4dc8a08e2f3cb6",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "secret",
+                                    "totp_code"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "secret": {
+                                        "type": "string"
+                                    },
+                                    "totp_code": {
+                                        "type": "string",
+                                        "maxLength": 6,
+                                        "minLength": 6
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "2FA activado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "2FA activado correctamente. Ya puedes iniciar sesión con tu código TOTP."
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Código TOTP inválido"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Datos del usuario autenticado",
+                "description": "Retorna el perfil, rol activo y permisos del usuario autenticado a partir del JWT sin consultar la BD.",
+                "operationId": "0ba7e8ac48d9a4ce53e693c04716cef8",
+                "responses": {
+                    "200": {
+                        "description": "Perfil del usuario",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "user": {
+                                                    "type": "object"
+                                                },
+                                                "active_role_id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "permissions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "session_id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/classes/summary": {
+            "get": {
+                "tags": [
+                    "Analytics - Clases"
+                ],
+                "summary": "Resumen general de clases",
+                "description": "Retorna totales, distribución por organización y por estilo de clase.",
+                "operationId": "1920c49670f6b48b811fcd76f9ba2b1a",
+                "responses": {
+                    "200": {
+                        "description": "Resumen de clases",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "totals": {
+                                                    "properties": {
+                                                        "total_classes": {
+                                                            "type": "integer"
+                                                        },
+                                                        "active": {
+                                                            "type": "integer"
+                                                        },
+                                                        "archived": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_enrollments": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_teachers": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "by_organization": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "by_style": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "last_synced_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "description": "Sin permiso reports.sync.view"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/classes": {
+            "get": {
+                "tags": [
+                    "Analytics - Clases"
+                ],
+                "summary": "Lista paginada de clases",
+                "description": "Retorna clases activas con métricas agregadas de inscripciones y docentes.",
+                "operationId": "785ebcbf51cd0c362ad6010bb10f60ad",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de clases",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "total_pages": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/classes/{neoId}": {
+            "get": {
+                "tags": [
+                    "Analytics - Clases"
+                ],
+                "summary": "Detalle de una clase",
+                "description": "Retorna la clase, un resumen de inscripciones, docentes y alumnos.",
+                "operationId": "82ebef2ecdd75cc45a1ba597d76bf6af",
+                "parameters": [
+                    {
+                        "name": "neoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle de la clase",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "class": {
+                                                    "type": "object"
+                                                },
+                                                "summary": {
+                                                    "type": "object"
+                                                },
+                                                "teachers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "students": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Clase no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/classes/{neoId}/lessons": {
+            "get": {
+                "tags": [
+                    "Analytics - Clases"
+                ],
+                "summary": "Lessons y sections de una clase",
+                "description": "Retorna el curriculum (lessons con sus sections anidadas) de una clase.",
+                "operationId": "d87d872e696cd891f2766f099d2b4efe",
+                "parameters": [
+                    {
+                        "name": "neoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Curriculum de la clase",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "class_id": {
+                                                    "type": "integer"
+                                                },
+                                                "class_name": {
+                                                    "type": "string"
+                                                },
+                                                "total_lessons": {
+                                                    "type": "integer"
+                                                },
+                                                "total_sections": {
+                                                    "type": "integer"
+                                                },
+                                                "lessons": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Clase no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/classes/{neoId}/assignments": {
+            "get": {
+                "tags": [
+                    "Analytics - Clases"
+                ],
+                "summary": "Assignments de una clase",
+                "description": "Retorna los assignments de una clase junto con totales agregados (entregados, pendientes, puntos, distribución por tipo y por modo de calificación).",
+                "operationId": "22f2ef948ed25b4d01c8a083ba82131a",
+                "parameters": [
+                    {
+                        "name": "neoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignments de la clase",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "class_id": {
+                                                    "type": "integer"
+                                                },
+                                                "class_name": {
+                                                    "type": "string"
+                                                },
+                                                "totals": {
+                                                    "type": "object"
+                                                },
+                                                "assignments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Clase no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/classes/{neoId}/assignments/{assignmentId}/grades": {
+            "get": {
+                "tags": [
+                    "Analytics - Clases"
+                ],
+                "summary": "Calificaciones de un assignment",
+                "description": "Retorna el assignment, estadísticas agregadas (promedios, distribución de calificaciones) y la lista de calificaciones por alumno.",
+                "operationId": "6d74487f8a2e8d5a3799f9a01bef6807",
+                "parameters": [
+                    {
+                        "name": "neoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "assignmentId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Calificaciones del assignment",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "assignment": {
+                                                    "type": "object"
+                                                },
+                                                "stats": {
+                                                    "type": "object"
+                                                },
+                                                "grades": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Clase o assignment no encontrados"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/analytics/classes/{neoId}/assignments/{assignmentId}/results": {
+            "get": {
+                "tags": [
+                    "Analytics - Clases"
+                ],
+                "summary": "Resultados de un assignment",
+                "description": "Retorna las respuestas individuales de los alumnos para un assignment (una por pregunta en quizzes, una por entrega en texto libre).",
+                "operationId": "75a42517a9b86a60f9706f1b33f23dc8",
+                "parameters": [
+                    {
+                        "name": "neoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "assignmentId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resultados del assignment",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "assignment": {
+                                                    "type": "object"
+                                                },
+                                                "total_results": {
+                                                    "type": "integer"
+                                                },
+                                                "results": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "timestamp": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Clase o assignment no encontrados"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Autenticación, 2FA y gestión de sesiones"
+        },
+        {
+            "name": "Role",
+            "description": "Gestión de roles RBAC2"
+        },
+        {
+            "name": "AuditLog",
+            "description": "Registro de auditoría"
+        },
+        {
+            "name": "Analytics - Usuarios",
+            "description": "Analítica de usuarios y sesiones"
+        },
+        {
+            "name": "Analytics - Clases",
+            "description": "Analítica de clases e inscripciones"
+        }
+    ],
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ]
+}

@@ -24,12 +24,12 @@ final class SyncNeoUsersJob implements ShouldQueue
 
     public int $backoff = 60;
 
-    public string $queue = 'neo-sync-default';
-
     public function __construct(
         public readonly ?int $organizationId = null,
         public readonly string $triggeredBy = 'scheduler',
-    ) {}
+    ) {
+        $this->onQueue('neo-sync-default');
+    }
 
     public function handle(SyncNeoUsersUseCase $useCase): void
     {
