@@ -118,6 +118,7 @@ final class AuthController extends Controller
                 'refresh_token' => $result->refreshToken,
                 'user' => $result->user,
                 'active_role' => $result->activeRole,
+                'permissions'               => $result->permissions,
                 'requires_role_selection' => $result->requiresRoleSelection,
                 'available_roles' => $result->availableRoles,
                 'requires_two_factor' => $result->requiresTwoFactor,

@@ -16,5 +16,6 @@ final readonly class LoginResult
         public bool $requiresTwoFactor,
         public bool $requiresTwoFactorSetup,
         public bool $mustChangePassword,
+        public array   $permissions = [],
     ) {}
 }
