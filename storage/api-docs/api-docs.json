@@ -1524,6 +1524,14 @@
                                                     "type": "object",
                                                     "nullable": true
                                                 },
+                                                "permissions": {
+                                                    "description": "Permisos del rol activo",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "reports.sync.view"
+                                                    }
+                                                },
                                                 "requires_role_selection": {
                                                     "type": "boolean"
                                                 },

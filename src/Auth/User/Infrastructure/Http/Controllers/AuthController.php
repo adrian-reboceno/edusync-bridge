@@ -83,6 +83,10 @@ final class AuthController extends Controller
      *                     @OA\Property(property="display_name", type="string"),
      *                     @OA\Property(property="hierarchy_level", type="integer")
      *                 ),
+     *              @OA\Property(property="permissions", type="array",        
+     *                      description="Permisos del rol activo",
+     *                      @OA\Items(type="string", example="reports.sync.view")
+     *                 ),
      *                 @OA\Property(property="requires_role_selection", type="boolean"),
      *                 @OA\Property(property="available_roles", type="array", @OA\Items(type="object")),
      *                 @OA\Property(property="requires_two_factor", type="boolean"),
