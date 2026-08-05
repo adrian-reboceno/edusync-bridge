@@ -117,6 +117,7 @@ final readonly class LoginUseCase
             requiresTwoFactor: false,
             requiresTwoFactorSetup: false,
             mustChangePassword: $user->mustChangePassword() || $user->checkPasswordExpiry(),
+            permissions:            $session['permissions'],
         );
     }
 
@@ -221,7 +222,7 @@ final readonly class LoginUseCase
 
         $this->sessions->save($session);
 
-        return ['accessToken' => $accessToken, 'refreshToken' => $refreshToken, 'sessionId' => $sessionId];
+        return ['accessToken' => $accessToken, 'refreshToken' => $refreshToken, 'sessionId' => $sessionId, 'permissions'  => $permissions,];
     }
 
     private function releaseEvents(User $user): void
